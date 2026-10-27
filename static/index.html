@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEGA Web Downloader Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            mega: {
+              red: '#ea1b25',
+              dark: '#0f172a',
+              card: '#1e293b',
+              accent: '#38bdf8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #090d16 60%, #030712 100%);
+      min-height: 100vh;
+    }
+    .glass {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glow-red {
+      box-shadow: 0 0 25px rgba(234, 27, 37, 0.35);
+    }
+    .glow-cyan {
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.25);
+    }
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="text-slate-100 font-sans antialiased selection:bg-red-500 selection:text-white">
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed top-5 right-5 z-50 transform transition-all duration-300 translate-x-full opacity-0 max-w-md pointer-events-none">
+    <div id="toast-inner" class="glass rounded-xl p-4 shadow-2xl flex items-start gap-3 border-l-4">
+      <div id="toast-icon"></div>
+      <div>
+        <h4 id="toast-title" class="font-semibold text-sm"></h4>
+        <p id="toast-message" class="text-xs text-slate-300 mt-0.5"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-5xl mx-auto px-4 py-8">
+
+    <!-- Header Navigation -->
+    <header class="flex flex-col md:flex-row items-center justify-between gap-4 pb-8 mb-8 border-b border-slate-800/80">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-500 flex items-center justify-center glow-red shadow-lg">
+          <i data-lucide="cloud-download" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-bold tracking-tight">MEGA<span class="text-red-500">Loader</span> Web</h1>
+            <span class="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">Pro Engine</span>
+          </div>
+          <p class="text-xs text-slate-400">High-speed decryptor & local stream downloader for MEGA.nz</p>
+        </div>
+      </div>
+
+      <!-- Quick Actions / Status -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 text-xs bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-slate-300 font-medium">Local Target:</span>
+          <span id="header-target-dir" class="font-mono text-cyan-400">D:\anime</span>
+        </div>
+        <button onclick="openTargetFolder()" class="glass hover:bg-slate-700/60 transition px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 text-slate-300 hover:text-white" title="Open Folder in Windows Explorer">
+          <i data-lucide="folder-open" class="w-4 h-4 text-cyan-400"></i>
+          <span>Open Folder</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Downloader Card -->
+    <section class="glass rounded-3xl p-6 md:p-8 mb-8 shadow-2xl relative overflow-hidden">
+      <div class="absolute -top-24 -right-24 w-72 h-72 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -left-24 w-72 h-72 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200">
+        <i data-lucide="link" class="w-5 h-5 text-red-500"></i>
+        <span>Download from MEGA Link</span>
+      </h2>
+
+      <!-- URL Input Area -->
+      <div class="space-y-4">
+        <div class="relative">
+          <input 
+            type="text" 
+            id="url-input"
+            placeholder="Paste MEGA URL (e.g. https://mega.nz/file/...#...)"
+            class="w-full bg-slate-900/90 border border-slate-700/80 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 rounded-2xl px-5 py-4 text-sm font-mono text-slate-100 placeholder-slate-500 outline-none transition pr-28 shadow-inner"
+            value="https://mega.nz/file/0clAHB7Q#rltTN0QpVYV7wAHpgV5JBB6PrS8_K2sRk-oRVnhmVZA"
+          />
+          <button 
+            onclick="pasteClipboard()"
+            class="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1.5"
+          >
+            <i data-lucide="clipboard" class="w-3.5 h-3.5"></i>
+            <span>Paste</span>
+          </button>
+        </div>
+
+        <!-- Target Folder Settings -->
+        <div class="flex flex-col sm:flex-row items-center gap-3">
+          <div class="w-full sm:w-2/3 flex items-center bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2 text-xs">
+            <span class="text-slate-400 font-medium mr-2 whitespace-nowrap">Save to PC:</span>
+            <input 
+              type="text" 
+              id="target-dir-input" 
+              value="D:\anime" 
+              class="w-full bg-transparent font-mono text-cyan-300 outline-none"
+              placeholder="e.g. D:\anime or D:\Downloads"
+            />
+          </div>
+
+          <div class="w-full sm:w-1/3 flex items-center gap-2">
+            <button 
+              id="inspect-btn"
+              onclick="inspectUrl()"
+              class="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition flex items-center justify-center gap-2"
+            >
+              <i data-lucide="info" class="w-4 h-4 text-slate-400"></i>
+              <span>Inspect Info</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Inspected File Preview Banner (Hidden by default) -->
+        <div id="inspect-preview" class="hidden glass rounded-2xl p-4 border border-cyan-500/30 bg-cyan-950/20">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                <i data-lucide="file-archive" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 id="preview-name" class="font-bold text-sm text-slate-100"></h4>
+                <div class="flex items-center gap-3 text-xs text-slate-400 font-mono mt-0.5">
+                  <span id="preview-size"></span>
+                  <span>•</span>
+                  <span id="preview-type" class="uppercase"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button 
+                onclick="startDownloadNow()"
+                class="px-5 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-lg glow-red transition flex items-center gap-2"
+              >
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Download to D:\anime</span>
+              </button>
+
+              <button 
+                onclick="streamBrowserDownload()"
+                class="px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
+                title="Download directly to your browser download folder"
+              >
+                <i data-lucide="globe" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons when not previewing -->
+        <div id="default-actions" class="flex flex-col sm:flex-row items-center gap-3 pt-2">
+          <button 
+            id="main-download-btn"
+            onclick="startDownloadNow()"
+            class="w-full sm:flex-1 py-3.5 px-6 rounded-2xl text-sm font-bold bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-xl glow-red transition flex items-center justify-center gap-2.5"
+          >
+            <i data-lucide="download-cloud" class="w-5 h-5"></i>
+            <span>Start Background Download (to D:\anime)</span>
+          </button>
+          
+          <button 
+            onclick="streamBrowserDownload()"
+            class="w-full sm:w-auto py-3.5 px-5 rounded-2xl text-sm font-semibold bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white transition flex items-center justify-center gap-2"
+          >
+            <i data-lucide="globe" class="w-4 h-4 text-cyan-400"></i>
+            <span>Stream via Browser</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tabs Navigation -->
+    <div class="flex items-center justify-between mb-4 border-b border-slate-800">
+      <div class="flex gap-4">
+        <button id="tab-btn-tasks" onclick="switchTab('tasks')" class="pb-3 text-sm font-bold text-red-500 border-b-2 border-red-500 flex items-center gap-2 transition">
+          <i data-lucide="activity" class="w-4 h-4"></i>
+          <span>Active Downloads</span>
+          <span id="badge-active-count" class="text-xs px-2 py-0.2 rounded-full bg-red-500/20 text-red-400">0</span>
+        </button>
+        <button id="tab-btn-history" onclick="switchTab('history')" class="pb-3 text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-2 transition">
+          <i data-lucide="folder" class="w-4 h-4"></i>
+          <span>Folder Files (D:\anime)</span>
+          <span id="badge-history-count" class="text-xs px-2 py-0.2 rounded-full bg-slate-800 text-slate-400">0</span>
+        </button>
+      </div>
+
+      <button onclick="fetchCurrentTab()" class="text-slate-400 hover:text-white transition p-1.5 rounded-lg hover:bg-slate-800" title="Refresh">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- Tab 1: Tasks Container -->
+    <div id="tab-content-tasks" class="space-y-4">
+      <div id="empty-tasks" class="text-center py-12 glass rounded-2xl">
+        <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-500">
+          <i data-lucide="inbox" class="w-6 h-6"></i>
+        </div>
+        <p class="text-sm font-medium text-slate-400">No active downloads right now</p>
+        <p class="text-xs text-slate-500 mt-1">Paste a MEGA link above to start downloading</p>
+      </div>
+
+      <div id="tasks-list" class="space-y-3"></div>
+    </div>
+
+    <!-- Tab 2: Target Folder Files Container -->
+    <div id="tab-content-history" class="hidden space-y-4">
+      <div id="history-list" class="glass rounded-2xl divide-y divide-slate-800/80 overflow-hidden">
+        <div class="text-center py-8 text-slate-500 text-sm">Loading folder contents...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let activeTab = 'tasks';
+    let pollInterval = null;
+
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Auto-update header target dir input
+    document.getElementById('target-dir-input').addEventListener('input', (e) => {
+      document.getElementById('header-target-dir').innerText = e.target.value || 'D:\\anime';
+    });
+
+    async function pasteClipboard() {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          document.getElementById('url-input').value = text;
+          showToast('Pasted!', 'URL pasted from clipboard', 'info');
+          inspectUrl();
+        }
+      } catch (err) {
+        showToast('Clipboard Error', 'Please paste manually with Ctrl+V', 'error');
+      }
+    }
+
+    function showToast(title, message, type = 'info') {
+      const toast = document.getElementById('toast');
+      const inner = document.getElementById('toast-inner');
+      const toastTitle = document.getElementById('toast-title');
+      const toastMessage = document.getElementById('toast-message');
+      const icon = document.getElementById('toast-icon');
+
+      toastTitle.innerText = title;
+      toastMessage.innerText = message;
+
+      if (type === 'success') {
+        inner.className = 'glass rounded-xl p-4 shadow-2xl flex items-start gap-3 border-l-4 border-emerald-500 bg-emerald-950/40';
+        icon.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>';
+      } else if (type === 'error') {
+        inner.className = 'glass rounded-xl p-4 shadow-2xl flex items-start gap-3 border-l-4 border-red-500 bg-red-950/40';
+        icon.innerHTML = '<i data-lucide="alert-triangle" class="w-5 h-5 text-red-400"></i>';
+      } else {
+        inner.className = 'glass rounded-xl p-4 shadow-2xl flex items-start gap-3 border-l-4 border-cyan-500 bg-cyan-950/40';
+        icon.innerHTML = '<i data-lucide="info" class="w-5 h-5 text-cyan-400"></i>';
+      }
+      lucide.createIcons();
+
+      toast.classList.remove('translate-x-full', 'opacity-0');
+      toast.classList.add('translate-x-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.add('translate-x-full', 'opacity-0');
+        toast.classList.remove('translate-x-0', 'opacity-100');
+      }, 3500);
+    }
+
+    async function inspectUrl() {
+      const url = document.getElementById('url-input').value.trim();
+      if (!url) {
+        showToast('Empty Link', 'Please enter a MEGA link', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('inspect-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Inspecting...</span>';
+      lucide.createIcons();
+
+      try {
+        const res = await fetch('/api/inspect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.detail || 'Failed to inspect MEGA URL');
+        }
+
+        // Show preview
+        document.getElementById('preview-name').innerText = data.file_name;
+        document.getElementById('preview-size').innerText = data.file_size_formatted;
+        document.getElementById('preview-type').innerText = data.file_extension || 'FILE';
+        document.getElementById('inspect-preview').classList.remove('hidden');
+        showToast('File Found', `${data.file_name} (${data.file_size_formatted})`, 'success');
+      } catch (err) {
+        showToast('Inspect Failed', err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="info" class="w-4 h-4 text-slate-400"></i><span>Inspect Info</span>';
+        lucide.createIcons();
+      }
+    }
+
+    async function startDownloadNow() {
+      const url = document.getElementById('url-input').value.trim();
+      const target_dir = document.getElementById('target-dir-input').value.trim() || 'D:\\anime';
+
+      if (!url) {
+        showToast('Empty Link', 'Please enter a MEGA link', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, target_dir })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Download request failed');
+
+        showToast('Download Started', `Downloading ${data.task.file_name} to ${target_dir}`, 'success');
+        switchTab('tasks');
+        loadTasks();
+      } catch (err) {
+        showToast('Error', err.message, 'error');
+      }
+    }
+
+    function streamBrowserDownload() {
+      const url = document.getElementById('url-input').value.trim();
+      if (!url) {
+        showToast('Empty Link', 'Please enter a MEGA link', 'error');
+        return;
+      }
+      showToast('Starting Stream', 'Browser download triggered...', 'info');
+      window.location.href = `/api/stream?url=${encodeURIComponent(url)}`;
+    }
+
+    async function cancelTask(taskId) {
+      try {
+        await fetch(`/api/tasks/${taskId}/cancel`, { method: 'POST' });
+        showToast('Cancelled', 'Download task stopped', 'info');
+        loadTasks();
+      } catch (err) {
+        showToast('Error', 'Failed to cancel task', 'error');
+      }
+    }
+
+    async function openTaskFolder(taskId) {
+      try {
+        await fetch(`/api/tasks/${taskId}/open-folder`, { method: 'POST' });
+      } catch (err) {
+        showToast('Error', 'Could not open folder in Explorer', 'error');
+      }
+    }
+
+    async function openTargetFolder() {
+      const dir = document.getElementById('target-dir-input').value.trim() || 'D:\\anime';
+      try {
+        await fetch(`/api/open-directory?dir_path=${encodeURIComponent(dir)}`, { method: 'POST' });
+      } catch (err) {
+        showToast('Error', 'Failed to open folder', 'error');
+      }
+    }
+
+    async function loadTasks() {
+      try {
+        const res = await fetch('/api/tasks');
+        const data = await res.json();
+        const tasks = data.tasks || [];
+
+        const activeCount = tasks.filter(t => t.status === 'DOWNLOADING' || t.status === 'QUEUED').length;
+        document.getElementById('badge-active-count').innerText = activeCount;
+
+        const container = document.getElementById('tasks-list');
+        const empty = document.getElementById('empty-tasks');
+
+        if (tasks.length === 0) {
+          empty.classList.remove('hidden');
+          container.innerHTML = '';
+          return;
+        }
+
+        empty.classList.add('hidden');
+        container.innerHTML = tasks.map(t => {
+          let badgeColor = 'bg-slate-700 text-slate-300';
+          let progressBg = 'bg-cyan-500';
+
+          if (t.status === 'COMPLETED') {
+            badgeColor = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+            progressBg = 'bg-emerald-500';
+          } else if (t.status === 'FAILED') {
+            badgeColor = 'bg-red-500/20 text-red-400 border border-red-500/30';
+            progressBg = 'bg-red-500';
+          } else if (t.status === 'DOWNLOADING') {
+            badgeColor = 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 animate-pulse-subtle';
+            progressBg = 'bg-gradient-to-r from-red-500 via-rose-500 to-cyan-400';
+          }
+
+          return `
+            <div class="glass rounded-2xl p-4 md:p-5 shadow-lg border border-slate-700/60 transition hover:border-slate-600">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-red-400">
+                    <i data-lucide="${t.status === 'COMPLETED' ? 'check' : (t.status === 'FAILED' ? 'alert-circle' : 'file-archive')}" class="w-5 h-5"></i>
+                  </div>
+                  <div class="overflow-hidden">
+                    <h4 class="font-semibold text-sm text-slate-100 truncate max-w-sm md:max-w-md" title="${t.file_name}">${t.file_name}</h4>
+                    <p class="text-xs text-slate-400 font-mono mt-0.5 truncate">${t.target_dir}</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 self-end sm:self-auto">
+                  <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${badgeColor}">
+                    ${t.status}
+                  </span>
+                  ${t.status === 'DOWNLOADING' ? `
+                    <button onclick="cancelTask('${t.task_id}')" class="px-2.5 py-1 rounded-lg text-xs bg-red-950/50 hover:bg-red-900 border border-red-700/60 text-red-300 transition" title="Cancel Download">
+                      Cancel
+                    </button>
+                  ` : ''}
+                  ${t.status === 'COMPLETED' ? `
+                    <button onclick="openTaskFolder('${t.task_id}')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition flex items-center gap-1">
+                      <i data-lucide="folder" class="w-3.5 h-3.5 text-cyan-400"></i>
+                      <span>Show</span>
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="w-full bg-slate-900 rounded-full h-3 overflow-hidden p-0.5 border border-slate-800 mb-2">
+                <div class="${progressBg} h-full rounded-full transition-all duration-300" style="width: ${t.progress_percent}%"></div>
+              </div>
+
+              <!-- Metrics -->
+              <div class="flex flex-wrap items-center justify-between text-xs font-mono text-slate-400 gap-2">
+                <div>
+                  <span class="text-slate-200 font-bold">${t.downloaded_formatted}</span> of ${t.file_size_formatted} (${t.progress_percent}%)
+                </div>
+                ${t.status === 'DOWNLOADING' ? `
+                  <div class="flex items-center gap-3">
+                    <span class="text-cyan-400 font-semibold">${t.speed_formatted}</span>
+                    <span>•</span>
+                    <span>ETA: ${t.eta_formatted}</span>
+                  </div>
+                ` : ''}
+                ${t.status === 'COMPLETED' ? `
+                  <span class="text-emerald-400">Downloaded in ${t.elapsed_seconds}s</span>
+                ` : ''}
+                ${t.status === 'FAILED' ? `
+                  <span class="text-red-400">${t.error_message || 'Download Failed'}</span>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        lucide.createIcons();
+      } catch (err) {
+        console.error('Failed to load tasks:', err);
+      }
+    }
+
+    async function loadHistory() {
+      const dir = document.getElementById('target-dir-input').value.trim() || 'D:\\anime';
+      try {
+        const res = await fetch(`/api/history?target_dir=${encodeURIComponent(dir)}`);
+        const data = await res.json();
+        const files = data.files || [];
+
+        document.getElementById('badge-history-count').innerText = files.length;
+        const container = document.getElementById('history-list');
+
+        if (files.length === 0) {
+          container.innerHTML = '<div class="text-center py-8 text-slate-500 text-sm">No files in target directory</div>';
+          return;
+        }
+
+        container.innerHTML = files.map(f => `
+          <div class="p-4 flex items-center justify-between hover:bg-slate-800/40 transition">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400">
+                <i data-lucide="file" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h5 class="text-sm font-semibold text-slate-200">${f.name}</h5>
+                <span class="text-xs font-mono text-slate-400">${f.size_formatted}</span>
+              </div>
+            </div>
+            <button onclick="openTargetFolder()" class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5 border border-slate-700">
+              <i data-lucide="external-link" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>Open in Folder</span>
+            </button>
+          </div>
+        `).join('');
+
+        lucide.createIcons();
+      } catch (err) {
+        console.error('Failed to load history:', err);
+      }
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      const tasksContent = document.getElementById('tab-content-tasks');
+      const historyContent = document.getElementById('tab-content-history');
+      const btnTasks = document.getElementById('tab-btn-tasks');
+      const btnHistory = document.getElementById('tab-btn-history');
+
+      if (tab === 'tasks') {
+        tasksContent.classList.remove('hidden');
+        historyContent.classList.add('hidden');
+        btnTasks.className = 'pb-3 text-sm font-bold text-red-500 border-b-2 border-red-500 flex items-center gap-2 transition';
+        btnHistory.className = 'pb-3 text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-2 transition';
+        loadTasks();
+      } else {
+        tasksContent.classList.add('hidden');
+        historyContent.classList.remove('hidden');
+        btnHistory.className = 'pb-3 text-sm font-bold text-red-500 border-b-2 border-red-500 flex items-center gap-2 transition';
+        btnTasks.className = 'pb-3 text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-2 transition';
+        loadHistory();
+      }
+    }
+
+    function fetchCurrentTab() {
+      if (activeTab === 'tasks') {
+        loadTasks();
+      } else {
+        loadHistory();
+      }
+    }
+
+    // Auto polling every 1 second
+    setInterval(loadTasks, 1000);
+    loadTasks();
+    loadHistory();
+  </script>
+</body>
+</html>

@@ -19,7 +19,7 @@ class DownloadTask:
         self.url = url
         self.target_dir = target_dir
         self.file_info = file_info
-        self.file_name = file_info['file_name']
+        self.file_name = file_info.get('file_name', 'downloaded_file')
         self.file_size = file_info.get('file_size', 0)
         self.provider = file_info.get('provider', 'direct')
         
@@ -42,7 +42,7 @@ class DownloadTask:
             "url": self.url,
             "file_name": self.file_name,
             "file_size": self.file_size,
-            "file_size_formatted": self._format_size(self.file_size) if self.file_size > 0 else "Unknown Size",
+            "file_size_formatted": self._format_size(self.file_size) if self.file_size > 0 else "Dynamic / Stream",
             "downloaded_bytes": self.downloaded_bytes,
             "downloaded_formatted": self._format_size(self.downloaded_bytes),
             "progress_percent": round(self.progress_percent, 1),
@@ -93,10 +93,12 @@ class DownloadTask:
 
 
 class TaskManager:
-    def __init__(self, universal_engine: UniversalEngine):
+    def __init__(self, universal_engine: UniversalEngine, max_concurrent: int = 3):
         self.engine = universal_engine
         self.tasks: Dict[str, DownloadTask] = {}
         self.lock = threading.Lock()
+        self.max_concurrent = max_concurrent
+        self.semaphore = threading.Semaphore(self.max_concurrent)
 
     def start_download(self, url: str, target_dir: str = r"D:\anime") -> DownloadTask:
         info = self.engine.inspect_url(url)
@@ -108,9 +110,23 @@ class TaskManager:
         with self.lock:
             self.tasks[task_id] = task
 
-        thread = threading.Thread(target=self._run_task, args=(task,), daemon=True)
+        thread = threading.Thread(target=self._task_worker, args=(task,), daemon=True)
         thread.start()
         return task
+
+    def batch_start_downloads(self, urls: List[str], target_dir: str = r"D:\anime") -> Dict[str, Any]:
+        created_tasks = []
+        errors = []
+        for raw_url in urls:
+            u = raw_url.strip()
+            if not u or u.startswith("#"):
+                continue
+            try:
+                task = self.start_download(u, target_dir)
+                created_tasks.append(task.to_dict())
+            except Exception as e:
+                errors.append({"url": u, "error": str(e)})
+        return {"tasks": created_tasks, "errors": errors}
 
     def cancel_task(self, task_id: str) -> bool:
         with self.lock:
@@ -124,6 +140,46 @@ class TaskManager:
                 return True
             return False
 
+    def cancel_all_active(self) -> int:
+        count = 0
+        with self.lock:
+            for task in self.tasks.values():
+                if task.status in ["QUEUED", "DOWNLOADING"]:
+                    task.cancel_event.set()
+                    task.status = "CANCELLED"
+                    task.finish_time = time.time()
+                    count += 1
+        return count
+
+    def retry_task(self, task_id: str) -> Optional[DownloadTask]:
+        with self.lock:
+            task = self.tasks.get(task_id)
+            if not task or task.status not in ["FAILED", "CANCELLED"]:
+                return None
+            task.cancel_event.clear()
+            task.status = "QUEUED"
+            task.downloaded_bytes = 0
+            task.progress_percent = 0.0
+            task.speed_bytes_sec = 0.0
+            task.eta_seconds = 0
+            task.error_message = None
+            task.start_time = None
+            task.finish_time = None
+
+        thread = threading.Thread(target=self._task_worker, args=(task,), daemon=True)
+        thread.start()
+        return task
+
+    def clear_finished(self) -> int:
+        with self.lock:
+            to_delete = [
+                tid for tid, t in self.tasks.items()
+                if t.status in ["COMPLETED", "FAILED", "CANCELLED"]
+            ]
+            for tid in to_delete:
+                del self.tasks[tid]
+            return len(to_delete)
+
     def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
         with self.lock:
             task = self.tasks.get(task_id)
@@ -132,6 +188,38 @@ class TaskManager:
     def get_all_tasks(self) -> List[Dict[str, Any]]:
         with self.lock:
             return [t.to_dict() for t in sorted(self.tasks.values(), key=lambda x: x.start_time or 0, reverse=True)]
+
+    def get_aggregate_stats(self) -> Dict[str, Any]:
+        with self.lock:
+            tasks = list(self.tasks.values())
+        active = sum(1 for t in tasks if t.status == "DOWNLOADING")
+        queued = sum(1 for t in tasks if t.status == "QUEUED")
+        completed = sum(1 for t in tasks if t.status == "COMPLETED")
+        failed = sum(1 for t in tasks if t.status == "FAILED")
+        speed = sum(t.speed_bytes_sec for t in tasks if t.status == "DOWNLOADING")
+        return {
+            "active_count": active,
+            "queued_count": queued,
+            "completed_count": completed,
+            "failed_count": failed,
+            "total_count": len(tasks),
+            "total_speed_bytes": speed,
+            "total_speed_formatted": DownloadTask._format_speed(speed),
+            "max_concurrent": self.max_concurrent
+        }
+
+    def _task_worker(self, task: DownloadTask):
+        if task.cancel_event.is_set():
+            task.status = "CANCELLED"
+            task.finish_time = time.time()
+            return
+
+        with self.semaphore:
+            if task.cancel_event.is_set():
+                task.status = "CANCELLED"
+                task.finish_time = time.time()
+                return
+            self._run_task(task)
 
     def _run_task(self, task: DownloadTask):
         task.status = "DOWNLOADING"

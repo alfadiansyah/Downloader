@@ -1,6 +1,6 @@
-# OmniDownloader Pro - Universal Cloud & Media Downloader
+# OmniDownloader Pro - Workstation Web Downloader
 
-A modern, high-speed universal web downloader supporting **MEGA.nz**, **TeraBox**, **Google Drive**, **YouTube / Social Media (yt-dlp)**, and **Direct HTTP/HTTPS** links. Files can be saved directly to any local directory on your PC (default: `D:\anime`) or streamed straight to your browser.
+A high-performance universal web downloader and queue workstation supporting **MEGA.nz**, **TeraBox**, **Google Drive**, **YouTube / Social Media (yt-dlp)**, and **Direct HTTP/HTTPS** links. Files can be saved directly to any local directory on your PC (default: `D:\anime`) or streamed straight to your browser.
 
 ---
 
@@ -13,21 +13,24 @@ A modern, high-speed universal web downloader supporting **MEGA.nz**, **TeraBox*
    - **Media & Social Video**: Supports YouTube, Twitter/X, TikTok, Instagram, and 1000+ media sites via `yt-dlp`.
    - **Direct HTTP/HTTPS**: High-speed chunked streaming for any direct file URL (ZIP, ISO, MP4, EXE, etc.) with custom headers and resume capabilities.
 
-2. **Real-Time URL Provider Detection**:
-   - As soon as you paste or type a URL, the interface automatically detects and highlights the provider badge (MEGA, TeraBox, GDrive, Media, Direct).
+2. **Batch Downloader & Queue Manager**:
+   - Paste dozens of URLs simultaneously (one per line) in **Batch Mode**.
+   - Automated concurrency semaphore (max 3 active concurrent downloads, remainder queued for slot release).
+   - Real-time batch URL parser with blank line and `#` comment filtering.
 
-3. **Modern Dark Glassmorphism UI**:
-   - Built with Tailwind CSS, Lucide icons, and responsive layouts.
-   - Live metrics: speed (MB/s), downloaded bytes, ETA countdown, and animated progress bars.
+3. **Minimalist Pro Utility UI (Anti-Slop Crafting)**:
+   - High information density inspired by professional desktop clients (qBittorrent, Transmission).
+   - Monospace tabular numeric columns for speed, percentage, ETA, and byte counters.
+   - Live aggregate bandwidth meter (`Total Speed: X.X MB/s`).
+   - Global queue controls: **Clear Finished**, **Cancel All**, **Retry Task**, **Show in Explorer**.
 
-4. **Background Task Manager & Explorer Integration**:
+4. **Background Task Engine & Windows Explorer Integration**:
    - Multi-threaded background download engine with live polling.
-   - Cancel downloads with one click.
    - Open downloaded files directly in Windows Explorer using the **Show** button.
-   - Open the target directory with the **Open Folder** button.
+   - Open target destination directly with the **Explorer** button.
 
 5. **Folder File Manager**:
-   - Browse, search, and inspect files already saved inside your target directory (e.g. `D:\anime`).
+   - Browse, locate, and inspect files already saved inside your target directory (e.g. `D:\anime`).
 
 ---
 
@@ -61,10 +64,12 @@ D:\assessment\
 │   ├── gdrive_engine.py      # Google Drive downloader (gdown)
 │   ├── ytdlp_engine.py       # YouTube & media downloader (yt-dlp)
 │   ├── direct_engine.py      # General HTTP/HTTPS chunked downloader
-│   └── task_manager.py       # Thread pool, speed metrics, ETA, and state
+│   └── task_manager.py       # Concurrency queue (semaphore), speed metrics, ETA
 ├── static\
-│   └── index.html            # Single-page web dashboard with auto-detection
+│   └── index.html            # Minimalist Pro single-page web dashboard
 ├── main.py                   # FastAPI server and REST API endpoints
+├── DESIGN.md                 # Antislop style direction & dials
+├── AGENTS.md                 # Antislop agent pointer configuration
 ├── requirements.txt          # Python dependencies
 ├── run.bat                   # Windows one-click startup script
 └── README.md
@@ -75,10 +80,14 @@ D:\assessment\
 ## 🔌 API Endpoints
 
 - `GET /api/detect?url=...` - Auto-detect provider (`mega`, `terabox`, `gdrive`, `media`, `direct`)
-- `POST /api/inspect` - Inspect URL metadata (filename, size, type, thumbnail)
-- `POST /api/download` - Queue a background download to a local PC folder
-- `GET /api/tasks` - List all active and past download tasks with real-time progress
+- `POST /api/inspect` - Inspect URL metadata (filename, size, type)
+- `POST /api/download` - Queue a single download
+- `POST /api/batch-download` - Queue multiple download links in one batch
+- `GET /api/tasks` - List all active/queued tasks with aggregate queue stats
 - `POST /api/tasks/{id}/cancel` - Cancel an active download task
+- `POST /api/tasks/{id}/retry` - Retry a failed or cancelled task
+- `POST /api/tasks/clear-finished` - Clean up completed/failed tasks from the list
+- `POST /api/tasks/cancel-all` - Stop all active and queued tasks
 - `POST /api/tasks/{id}/open-folder` - Open the file's location in Windows Explorer
 - `GET /api/stream?url=...` - Stream file directly to browser downloads
 - `GET /api/history?target_dir=...` - List files in the target directory

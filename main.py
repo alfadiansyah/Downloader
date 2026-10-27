@@ -1,6 +1,7 @@
 import os
 import subprocess
 from pathlib import Path
+from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -10,7 +11,7 @@ from pydantic import BaseModel
 from app.universal_engine import UniversalEngine
 from app.task_manager import TaskManager, DownloadTask
 
-app = FastAPI(title="OmniDownloader Pro", version="2.0.0")
+app = FastAPI(title="OmniDownloader Pro", version="2.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,7 +22,7 @@ app.add_middleware(
 )
 
 engine = UniversalEngine()
-task_manager = TaskManager(engine)
+task_manager = TaskManager(engine, max_concurrent=3)
 
 # Mount static files
 static_dir = Path(__file__).parent / "static"
@@ -32,6 +33,10 @@ class InspectRequest(BaseModel):
 
 class DownloadRequest(BaseModel):
     url: str
+    target_dir: str = r"D:\anime"
+
+class BatchDownloadRequest(BaseModel):
+    urls: List[str]
     target_dir: str = r"D:\anime"
 
 @app.get("/")
@@ -69,9 +74,20 @@ def start_download(req: DownloadRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@app.post("/api/batch-download")
+def batch_download(req: BatchDownloadRequest):
+    if not req.urls:
+        raise HTTPException(status_code=400, detail="No URLs provided")
+    target_dir = req.target_dir.strip() if req.target_dir else r"D:\anime"
+    res = task_manager.batch_start_downloads(req.urls, target_dir)
+    return {"success": True, **res}
+
 @app.get("/api/tasks")
 def list_tasks():
-    return {"tasks": task_manager.get_all_tasks()}
+    return {
+        "tasks": task_manager.get_all_tasks(),
+        "stats": task_manager.get_aggregate_stats()
+    }
 
 @app.post("/api/tasks/{task_id}/cancel")
 def cancel_task(task_id: str):
@@ -79,6 +95,23 @@ def cancel_task(task_id: str):
     if not success:
         raise HTTPException(status_code=404, detail="Task not found or already completed/cancelled")
     return {"success": True, "task_id": task_id}
+
+@app.post("/api/tasks/{task_id}/retry")
+def retry_task(task_id: str):
+    task = task_manager.retry_task(task_id)
+    if not task:
+        raise HTTPException(status_code=400, detail="Cannot retry task (not found or not in failed/cancelled state)")
+    return {"success": True, "task": task.to_dict()}
+
+@app.post("/api/tasks/clear-finished")
+def clear_finished_tasks():
+    cleared = task_manager.clear_finished()
+    return {"success": True, "cleared_count": cleared}
+
+@app.post("/api/tasks/cancel-all")
+def cancel_all_active_tasks():
+    count = task_manager.cancel_all_active()
+    return {"success": True, "cancelled_count": count}
 
 @app.post("/api/tasks/{task_id}/open-folder")
 def open_folder(task_id: str):

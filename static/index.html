@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OmniDownloader Pro - Universal Cloud & Media Downloader</title>
+  <title>OmniDownloader Pro</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>
     tailwind.config = {
@@ -15,16 +15,15 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Outfit', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
+            sans: ['Outfit', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Consolas', 'Courier New', 'monospace'],
           },
           colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
+            surface: {
+              DEFAULT: '#0f172a',
+              panel: '#111827',
+              input: '#090d16',
+              border: '#1f2937'
             }
           }
         }
@@ -33,263 +32,317 @@
   </script>
   <style>
     body {
-      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0a0d18 50%, #030712 100%);
+      background-color: #080c14;
+      color: #e2e8f0;
       min-height: 100vh;
     }
-    .glass {
-      background: rgba(18, 24, 38, 0.75);
-      backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+    .panel {
+      background-color: #0f1623;
+      border: 1px solid #1e293b;
     }
-    .glow-indigo {
-      box-shadow: 0 0 25px rgba(99, 102, 241, 0.35);
+    .panel-subtle {
+      background-color: #0b111c;
+      border: 1px solid #1a2436;
     }
-    .glow-cyan {
-      box-shadow: 0 0 25px rgba(56, 189, 248, 0.25);
-    }
-    .glow-red {
-      box-shadow: 0 0 25px rgba(239, 68, 68, 0.35);
-    }
-    @keyframes pulse-subtle {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
-    }
-    .animate-pulse-subtle {
-      animation: pulse-subtle 2s infinite ease-in-out;
+    .mono-num {
+      font-variant-numeric: tabular-nums;
     }
     .provider-pill {
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.15s ease-in-out;
     }
     .provider-pill.active {
-      transform: translateY(-2px) scale(1.05);
-      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
-      border-color: rgba(99, 102, 241, 0.9);
-      background: rgba(99, 102, 241, 0.2);
+      border-color: #6366f1;
+      background-color: rgba(99, 102, 241, 0.15);
+      color: #e0e7ff;
     }
   </style>
 </head>
-<body class="text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white">
+<body class="font-sans antialiased selection:bg-indigo-600 selection:text-white">
 
   <!-- Notification Toast -->
-  <div id="toast" class="fixed top-5 right-5 z-50 transform transition-all duration-300 translate-x-full opacity-0 max-w-md pointer-events-none">
-    <div id="toast-inner" class="glass rounded-2xl p-4 shadow-2xl flex items-start gap-3 border-l-4">
-      <div id="toast-icon"></div>
+  <div id="toast" class="fixed top-4 right-4 z-50 transform transition-all duration-200 translate-x-full opacity-0 max-w-sm pointer-events-none">
+    <div id="toast-inner" class="panel rounded-lg p-3.5 shadow-xl flex items-start gap-3 border-l-4">
+      <div id="toast-icon" class="shrink-0 mt-0.5"></div>
       <div>
-        <h4 id="toast-title" class="font-semibold text-sm"></h4>
-        <p id="toast-message" class="text-xs text-slate-300 mt-0.5"></p>
+        <h4 id="toast-title" class="font-semibold text-xs text-slate-100"></h4>
+        <p id="toast-message" class="text-xs text-slate-400 mt-0.5 font-mono"></p>
       </div>
     </div>
   </div>
 
-  <div class="max-w-5xl mx-auto px-4 py-8">
+  <div class="max-w-6xl mx-auto px-4 py-6">
 
-    <!-- Header Navigation -->
-    <header class="flex flex-col md:flex-row items-center justify-between gap-4 pb-8 mb-8 border-b border-slate-800/80">
-      <div class="flex items-center gap-3.5">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center glow-indigo shadow-lg">
-          <i data-lucide="download-cloud" class="w-6 h-6 text-white"></i>
+    <!-- Top App Bar & Live Aggregate Metrics -->
+    <header class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 pb-5 mb-6 border-b border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0 shadow-sm">
+          <i data-lucide="download" class="w-5 h-5"></i>
         </div>
         <div>
-          <div class="flex items-center gap-2.5">
-            <h1 class="text-2xl font-extrabold tracking-tight">Omni<span class="text-indigo-400">Downloader</span> Pro</h1>
-            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Universal v2.0</span>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-bold tracking-tight text-slate-100">OmniDownloader<span class="text-indigo-400">Pro</span></h1>
+            <span class="text-[10px] font-mono font-medium uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">v2.1</span>
           </div>
-          <p class="text-xs text-slate-400">Universal high-speed downloader for MEGA, TeraBox, Google Drive, Media & Direct Links</p>
+          <p class="text-xs text-slate-400">Workstation downloader for MEGA, TeraBox, Google Drive, Media & Direct Links</p>
         </div>
       </div>
 
-      <!-- Quick Actions / Target Status -->
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-2 text-xs bg-slate-900/90 border border-slate-700/60 rounded-xl px-3.5 py-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-slate-400 font-medium">Save Dir:</span>
-          <span id="header-target-dir" class="font-mono text-indigo-300 font-semibold">D:\anime</span>
+      <!-- Live Speed & Queue Stats Bar -->
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <div class="panel-subtle px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <span class="text-slate-400">Total Speed:</span>
+          <span id="stat-total-speed" class="font-mono font-bold text-cyan-400 mono-num">0.0 KB/s</span>
         </div>
-        <button onclick="openTargetFolder()" class="glass hover:bg-slate-800/80 transition px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 text-slate-300 hover:text-white" title="Open Folder in Windows Explorer">
-          <i data-lucide="folder-open" class="w-4 h-4 text-indigo-400"></i>
-          <span>Open Folder</span>
+
+        <div class="panel-subtle px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <span class="text-slate-400">Active:</span>
+          <span id="stat-active" class="font-mono font-semibold text-indigo-300 mono-num">0</span>
+          <span class="text-slate-600">/</span>
+          <span class="text-slate-400">Queued:</span>
+          <span id="stat-queued" class="font-mono text-slate-300 mono-num">0</span>
+        </div>
+
+        <div class="panel-subtle px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+          <span class="text-slate-400">Save:</span>
+          <span id="header-target-dir" class="font-mono text-slate-200">D:\anime</span>
+        </div>
+
+        <button onclick="openTargetFolder()" class="panel-subtle hover:bg-slate-800 text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg transition flex items-center gap-1.5" title="Open destination directory">
+          <i data-lucide="folder-open" class="w-3.5 h-3.5 text-slate-400"></i>
+          <span>Explorer</span>
         </button>
       </div>
     </header>
 
-    <!-- Main Downloader Card -->
-    <section class="glass rounded-3xl p-6 md:p-8 mb-8 shadow-2xl relative overflow-hidden">
-      <div class="absolute -top-24 -right-24 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
-      <div class="absolute -bottom-24 -left-24 w-72 h-72 bg-pink-600/10 rounded-full blur-3xl pointer-events-none"></div>
-
-      <!-- Supported Providers Bar -->
-      <div class="mb-5">
-        <div class="flex items-center justify-between mb-2.5">
-          <span class="text-xs font-semibold text-slate-400 tracking-wider uppercase">Supported Providers & Protocols</span>
-          <span id="detected-provider-label" class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">Auto-detecting...</span>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2" id="provider-badges">
-          <div id="badge-mega" class="provider-pill flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-medium text-slate-300">
-            <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
-            <span>MEGA.nz</span>
-          </div>
-          <div id="badge-terabox" class="provider-pill flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-medium text-slate-300">
-            <div class="w-2.5 h-2.5 rounded-full bg-sky-400"></div>
-            <span>TeraBox</span>
-          </div>
-          <div id="badge-gdrive" class="provider-pill flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-medium text-slate-300">
-            <div class="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
-            <span>Google Drive</span>
-          </div>
-          <div id="badge-media" class="provider-pill flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-medium text-slate-300">
-            <div class="w-2.5 h-2.5 rounded-full bg-purple-400"></div>
-            <span>YouTube / Media</span>
-          </div>
-          <div id="badge-direct" class="provider-pill flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-medium text-slate-300">
-            <div class="w-2.5 h-2.5 rounded-full bg-cyan-400"></div>
-            <span>Direct HTTP(S)</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- URL Input Area -->
-      <div class="space-y-4">
-        <div class="relative">
-          <input 
-            type="text" 
-            id="url-input"
-            placeholder="Paste download link here (MEGA, TeraBox, Google Drive, YouTube, Direct File URL)..."
-            class="w-full bg-slate-900/90 border border-slate-700/80 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-2xl px-5 py-4 text-sm font-mono text-slate-100 placeholder-slate-500 outline-none transition pr-28 shadow-inner"
-            value="https://mega.nz/file/0clAHB7Q#rltTN0QpVYV7wAHpgV5JBB6PrS8_K2sRk-oRVnhmVZA"
-          />
+    <!-- Download Command Panel -->
+    <section class="panel rounded-xl p-5 mb-6 shadow-sm">
+      <!-- Mode Segment Control: Single vs Batch -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800">
           <button 
-            onclick="pasteClipboard()"
-            class="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1.5"
+            id="mode-btn-single" 
+            onclick="setMode('single')" 
+            class="px-3.5 py-1.5 rounded-md text-xs font-semibold transition bg-indigo-600 text-white shadow-sm flex items-center gap-1.5"
           >
-            <i data-lucide="clipboard" class="w-3.5 h-3.5"></i>
-            <span>Paste</span>
+            <i data-lucide="link" class="w-3.5 h-3.5"></i>
+            <span>Single Link</span>
+          </button>
+          <button 
+            id="mode-btn-batch" 
+            onclick="setMode('batch')" 
+            class="px-3.5 py-1.5 rounded-md text-xs font-semibold transition text-slate-400 hover:text-slate-200 flex items-center gap-1.5"
+          >
+            <i data-lucide="list-plus" class="w-3.5 h-3.5"></i>
+            <span>Batch Downloader</span>
+            <span id="batch-badge-count" class="hidden text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/30 text-indigo-300">0</span>
           </button>
         </div>
 
-        <!-- Target Folder Settings & Inspect -->
-        <div class="flex flex-col sm:flex-row items-center gap-3">
-          <div class="w-full sm:w-2/3 flex items-center bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2 text-xs">
-            <span class="text-slate-400 font-medium mr-2 whitespace-nowrap">Save to PC:</span>
+        <!-- Target Dir Input Inline -->
+        <div class="flex items-center gap-2 text-xs">
+          <label for="target-dir-input" class="text-slate-400 font-medium hidden sm:inline">Destination:</label>
+          <input 
+            type="text" 
+            id="target-dir-input" 
+            value="D:\anime" 
+            class="panel-subtle font-mono text-xs text-indigo-300 px-3 py-1.5 rounded-lg outline-none w-44 sm:w-56 focus:border-indigo-500 transition"
+            placeholder="D:\anime"
+          />
+        </div>
+      </div>
+
+      <!-- VIEW 1: Single Link Mode -->
+      <div id="view-single" class="space-y-4">
+        <!-- Supported Providers Quick Indicator -->
+        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mr-1">Supported:</span>
+          <span id="badge-mega" class="provider-pill px-2 py-0.5 rounded text-[11px] font-mono border border-slate-800 bg-slate-900 text-slate-400">MEGA.nz</span>
+          <span id="badge-terabox" class="provider-pill px-2 py-0.5 rounded text-[11px] font-mono border border-slate-800 bg-slate-900 text-slate-400">TeraBox</span>
+          <span id="badge-gdrive" class="provider-pill px-2 py-0.5 rounded text-[11px] font-mono border border-slate-800 bg-slate-900 text-slate-400">Google Drive</span>
+          <span id="badge-media" class="provider-pill px-2 py-0.5 rounded text-[11px] font-mono border border-slate-800 bg-slate-900 text-slate-400">YouTube/Media</span>
+          <span id="badge-direct" class="provider-pill px-2 py-0.5 rounded text-[11px] font-mono border border-slate-800 bg-slate-900 text-slate-400">Direct HTTP(S)</span>
+          <span id="detected-provider-label" class="ml-auto text-[11px] font-mono text-slate-500">Awaiting input</span>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2">
+          <div class="relative flex-1">
             <input 
               type="text" 
-              id="target-dir-input" 
-              value="D:\anime" 
-              class="w-full bg-transparent font-mono text-indigo-300 outline-none"
-              placeholder="e.g. D:\anime or D:\Downloads"
+              id="url-input"
+              placeholder="Paste any download URL here..."
+              class="w-full panel-subtle rounded-lg px-3.5 py-2.5 text-xs font-mono text-slate-100 placeholder-slate-500 outline-none focus:border-indigo-500 transition pr-20"
+              value="https://mega.nz/file/0clAHB7Q#rltTN0QpVYV7wAHpgV5JBB6PrS8_K2sRk-oRVnhmVZA"
             />
+            <button 
+              onclick="pasteClipboard()"
+              class="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+              title="Paste from clipboard"
+            >
+              Paste
+            </button>
           </div>
 
-          <div class="w-full sm:w-1/3 flex items-center gap-2">
+          <div class="flex items-center gap-2 shrink-0">
             <button 
               id="inspect-btn"
               onclick="inspectUrl()"
-              class="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition flex items-center justify-center gap-2"
+              class="px-3.5 py-2.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5"
             >
-              <i data-lucide="info" class="w-4 h-4 text-slate-400"></i>
-              <span>Inspect Info</span>
+              <i data-lucide="info" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span>Inspect</span>
+            </button>
+
+            <button 
+              id="single-download-btn"
+              onclick="startSingleDownload()"
+              class="px-5 py-2.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow-sm"
+            >
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Download</span>
+            </button>
+
+            <button 
+              onclick="streamBrowserDownload()"
+              class="px-3 py-2.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+              title="Stream directly through browser"
+            >
+              <i data-lucide="globe" class="w-3.5 h-3.5 text-slate-400"></i>
             </button>
           </div>
         </div>
 
-        <!-- Inspected File Preview Banner (Hidden by default) -->
-        <div id="inspect-preview" class="hidden glass rounded-2xl p-4 border border-indigo-500/30 bg-indigo-950/20">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-              <div id="preview-icon-wrapper" class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
-                <i id="preview-icon" data-lucide="file-archive" class="w-5 h-5"></i>
-              </div>
-              <div class="overflow-hidden">
-                <div class="flex items-center gap-2">
-                  <h4 id="preview-name" class="font-bold text-sm text-slate-100 truncate max-w-sm sm:max-w-md"></h4>
-                  <span id="preview-provider-tag" class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"></span>
-                </div>
-                <div class="flex items-center gap-3 text-xs text-slate-400 font-mono mt-0.5">
-                  <span id="preview-size"></span>
-                  <span>•</span>
-                  <span id="preview-type" class="uppercase"></span>
-                </div>
-              </div>
+        <!-- Inspect Preview Banner -->
+        <div id="inspect-preview" class="hidden panel-subtle rounded-lg p-3 border border-indigo-900/60 bg-indigo-950/20 text-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5 overflow-hidden">
+              <span id="preview-provider-tag" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase bg-indigo-900/50 text-indigo-300 border border-indigo-700/50 shrink-0"></span>
+              <span id="preview-name" class="font-semibold text-slate-100 truncate"></span>
+              <span class="text-slate-500">•</span>
+              <span id="preview-size" class="font-mono text-slate-400 shrink-0"></span>
             </div>
 
-            <div class="flex items-center gap-2 shrink-0">
+            <div class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
               <button 
-                onclick="startDownloadNow()"
-                class="px-5 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg glow-indigo transition flex items-center gap-2"
+                onclick="startSingleDownload()"
+                class="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition"
               >
-                <i data-lucide="download" class="w-4 h-4"></i>
-                <span>Download to Local</span>
+                Queue Task
               </button>
-
               <button 
-                onclick="streamBrowserDownload()"
-                class="px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
-                title="Download directly to your browser downloads folder"
+                onclick="document.getElementById('inspect-preview').classList.add('hidden')"
+                class="text-slate-500 hover:text-slate-300 px-1 py-1"
+                title="Dismiss"
               >
-                <i data-lucide="globe" class="w-4 h-4"></i>
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
               </button>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Action Buttons when not previewing -->
-        <div id="default-actions" class="flex flex-col sm:flex-row items-center gap-3 pt-2">
-          <button 
-            id="main-download-btn"
-            onclick="startDownloadNow()"
-            class="w-full sm:flex-1 py-3.5 px-6 rounded-2xl text-sm font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:via-purple-500 hover:to-indigo-500 text-white shadow-xl glow-indigo transition flex items-center justify-center gap-2.5"
-          >
-            <i data-lucide="download-cloud" class="w-5 h-5"></i>
-            <span>Start Background Download (to D:\anime)</span>
-          </button>
-          
-          <button 
-            onclick="streamBrowserDownload()"
-            class="w-full sm:w-auto py-3.5 px-5 rounded-2xl text-sm font-semibold bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white transition flex items-center justify-center gap-2"
-          >
-            <i data-lucide="globe" class="w-4 h-4 text-cyan-400"></i>
-            <span>Stream via Browser</span>
-          </button>
+      <!-- VIEW 2: Batch Downloader Mode -->
+      <div id="view-batch" class="hidden space-y-3">
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <span>Enter download URLs below (one URL per line):</span>
+          <span id="batch-stats-summary" class="font-mono text-indigo-300 font-medium">0 valid URLs detected</span>
+        </div>
+
+        <textarea 
+          id="batch-urls-input"
+          rows="5"
+          placeholder="https://mega.nz/file/...&#10;https://terabox.com/s/...&#10;https://drive.google.com/file/d/...&#10;https://www.youtube.com/watch?v=...&#10;https://example.com/archive.zip"
+          class="w-full panel-subtle rounded-lg p-3 text-xs font-mono text-slate-100 placeholder-slate-600 outline-none focus:border-indigo-500 transition resize-y leading-relaxed"
+        ></textarea>
+
+        <div class="flex items-center justify-between pt-1">
+          <div class="flex items-center gap-2 text-xs text-slate-500">
+            <span>Tip: Blank lines and lines starting with # are ignored.</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button 
+              onclick="document.getElementById('batch-urls-input').value = ''; updateBatchStats();"
+              class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+            >
+              Clear
+            </button>
+            <button 
+              id="batch-submit-btn"
+              onclick="startBatchDownload()"
+              class="px-5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+            >
+              <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+              <span>Queue All Tasks</span>
+            </button>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Tabs Navigation -->
-    <div class="flex items-center justify-between mb-4 border-b border-slate-800">
-      <div class="flex gap-4">
-        <button id="tab-btn-tasks" onclick="switchTab('tasks')" class="pb-3 text-sm font-bold text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-2 transition">
-          <i data-lucide="activity" class="w-4 h-4"></i>
-          <span>Active Downloads</span>
-          <span id="badge-active-count" class="text-xs px-2 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300">0</span>
+    <!-- Navigation Tabs & Queue Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b border-slate-800">
+      <div class="flex items-center gap-4 text-xs font-semibold">
+        <button id="tab-btn-tasks" onclick="switchTab('tasks')" class="pb-2 text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-1.5 transition">
+          <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+          <span>Tasks & Queue</span>
+          <span id="badge-active-count" class="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 mono-num">0</span>
         </button>
-        <button id="tab-btn-history" onclick="switchTab('history')" class="pb-3 text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-2 transition">
-          <i data-lucide="folder" class="w-4 h-4"></i>
-          <span>Folder Files (D:\anime)</span>
-          <span id="badge-history-count" class="text-xs px-2 py-0.2 rounded-full bg-slate-800 text-slate-400">0</span>
+
+        <button id="tab-btn-history" onclick="switchTab('history')" class="pb-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-1.5 transition">
+          <i data-lucide="folder" class="w-3.5 h-3.5"></i>
+          <span>Target Files (D:\anime)</span>
+          <span id="badge-history-count" class="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-400 mono-num">0</span>
         </button>
       </div>
 
-      <button onclick="fetchCurrentTab()" class="text-slate-400 hover:text-white transition p-1.5 rounded-lg hover:bg-slate-800" title="Refresh">
-        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-      </button>
+      <!-- Batch Queue Actions -->
+      <div class="flex items-center gap-2 text-xs self-end sm:self-auto">
+        <button 
+          onclick="clearFinishedTasks()" 
+          class="px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 transition flex items-center gap-1"
+          title="Remove completed, failed, and cancelled tasks from list"
+        >
+          <i data-lucide="trash-2" class="w-3 h-3 text-slate-400"></i>
+          <span>Clear Finished</span>
+        </button>
+
+        <button 
+          onclick="cancelAllTasks()" 
+          class="px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-800/80 hover:bg-rose-950 text-slate-300 hover:text-rose-300 border border-slate-700/80 hover:border-rose-800/80 transition flex items-center gap-1"
+          title="Stop all active downloads"
+        >
+          <i data-lucide="stop-circle" class="w-3 h-3 text-rose-400"></i>
+          <span>Cancel All</span>
+        </button>
+
+        <button 
+          onclick="fetchCurrentTab()" 
+          class="p-1 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700/80 transition" 
+          title="Refresh view"
+        >
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
     </div>
 
-    <!-- Tab 1: Tasks Container -->
-    <div id="tab-content-tasks" class="space-y-4">
-      <div id="empty-tasks" class="text-center py-12 glass rounded-2xl">
-        <div class="w-12 h-12 rounded-full bg-slate-800/80 flex items-center justify-center mx-auto mb-3 text-slate-500">
-          <i data-lucide="inbox" class="w-6 h-6"></i>
+    <!-- TAB 1: Tasks & Queue View -->
+    <div id="tab-content-tasks" class="space-y-2.5">
+      <div id="empty-tasks" class="panel rounded-xl p-8 text-center">
+        <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center mx-auto mb-2.5 text-slate-500">
+          <i data-lucide="inbox" class="w-5 h-5"></i>
         </div>
-        <p class="text-sm font-medium text-slate-300">No active downloads right now</p>
-        <p class="text-xs text-slate-500 mt-1">Paste any supported link above (MEGA, TeraBox, Google Drive, Media, or Direct Link)</p>
+        <p class="text-xs font-semibold text-slate-300">No tasks in queue</p>
+        <p class="text-[11px] text-slate-500 mt-0.5">Paste links above (Single or Batch) to start downloading</p>
       </div>
 
-      <div id="tasks-list" class="space-y-3"></div>
+      <div id="tasks-list" class="space-y-2"></div>
     </div>
 
-    <!-- Tab 2: Target Folder Files Container -->
-    <div id="tab-content-history" class="hidden space-y-4">
-      <div id="history-list" class="glass rounded-2xl divide-y divide-slate-800/80 overflow-hidden">
-        <div class="text-center py-8 text-slate-500 text-sm">Loading folder contents...</div>
+    <!-- TAB 2: Folder Files View -->
+    <div id="tab-content-history" class="hidden space-y-2">
+      <div id="history-list" class="panel rounded-xl divide-y divide-slate-800 overflow-hidden text-xs">
+        <div class="p-6 text-center text-slate-500">Loading folder contents...</div>
       </div>
     </div>
 
@@ -297,24 +350,69 @@
 
   <script>
     let activeTab = 'tasks';
-    let currentDetectedProvider = 'unknown';
+    let currentMode = 'single';
     let detectTimeout = null;
 
-    // Initialize Lucide icons
     lucide.createIcons();
 
-    // Auto-update header target dir input
+    // Mode Toggle: Single vs Batch
+    function setMode(mode) {
+      currentMode = mode;
+      const btnSingle = document.getElementById('mode-btn-single');
+      const btnBatch = document.getElementById('mode-btn-batch');
+      const viewSingle = document.getElementById('view-single');
+      const viewBatch = document.getElementById('view-batch');
+
+      if (mode === 'single') {
+        btnSingle.className = 'px-3.5 py-1.5 rounded-md text-xs font-semibold transition bg-indigo-600 text-white shadow-sm flex items-center gap-1.5';
+        btnBatch.className = 'px-3.5 py-1.5 rounded-md text-xs font-semibold transition text-slate-400 hover:text-slate-200 flex items-center gap-1.5';
+        viewSingle.classList.remove('hidden');
+        viewBatch.classList.add('hidden');
+      } else {
+        btnBatch.className = 'px-3.5 py-1.5 rounded-md text-xs font-semibold transition bg-indigo-600 text-white shadow-sm flex items-center gap-1.5';
+        btnSingle.className = 'px-3.5 py-1.5 rounded-md text-xs font-semibold transition text-slate-400 hover:text-slate-200 flex items-center gap-1.5';
+        viewBatch.classList.remove('hidden');
+        viewSingle.classList.add('hidden');
+        updateBatchStats();
+      }
+      lucide.createIcons();
+    }
+
+    // Live Target Dir Sync
     const targetDirInput = document.getElementById('target-dir-input');
     targetDirInput.addEventListener('input', (e) => {
       document.getElementById('header-target-dir').innerText = e.target.value || 'D:\\anime';
     });
 
-    // Real-time URL detector
+    // Single URL Live Provider Detector
     const urlInput = document.getElementById('url-input');
     urlInput.addEventListener('input', () => {
       clearTimeout(detectTimeout);
-      detectTimeout = setTimeout(detectProviderRealtime, 250);
+      detectTimeout = setTimeout(detectProviderRealtime, 200);
     });
+
+    // Batch URLs Textarea Listener
+    const batchInput = document.getElementById('batch-urls-input');
+    batchInput.addEventListener('input', updateBatchStats);
+
+    function getValidBatchUrls() {
+      const text = batchInput.value;
+      const lines = text.split('\n');
+      return lines.map(l => l.trim()).filter(l => l.length > 0 && !l.startswith('#'));
+    }
+
+    function updateBatchStats() {
+      const urls = getValidBatchUrls();
+      const count = urls.length;
+      document.getElementById('batch-stats-summary').innerText = `${count} valid URL${count === 1 ? '' : 's'} ready`;
+      const badge = document.getElementById('batch-badge-count');
+      if (count > 0) {
+        badge.innerText = count;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
 
     async function detectProviderRealtime() {
       const url = urlInput.value.trim();
@@ -325,11 +423,10 @@
       });
 
       if (!url) {
-        document.getElementById('detected-provider-label').innerText = 'Awaiting link...';
+        document.getElementById('detected-provider-label').innerText = 'Awaiting input';
         return;
       }
 
-      // Quick local regex pre-classification
       let quick = null;
       if (url.includes('mega.nz')) quick = 'mega';
       else if (/terabox|1024tera|teraboxapp|freeterabox/i.test(url)) quick = 'terabox';
@@ -337,20 +434,15 @@
       else if (/youtube\.com|youtu\.be|twitter\.com|x\.com|tiktok\.com|instagram\.com/i.test(url)) quick = 'media';
       else if (/^https?:\/\//i.test(url)) quick = 'direct';
 
-      if (quick) {
-        highlightProviderBadge(quick);
-      }
+      if (quick) highlightProviderBadge(quick);
 
       try {
         const res = await fetch(`/api/detect?url=${encodeURIComponent(url)}`);
         if (res.ok) {
           const data = await res.json();
-          currentDetectedProvider = data.provider;
           highlightProviderBadge(data.provider);
         }
-      } catch (e) {
-        // Fallback to quick
-      }
+      } catch (e) {}
     }
 
     function highlightProviderBadge(provider) {
@@ -367,16 +459,15 @@
       }
 
       const names = {
-        'mega': 'MEGA.nz Detected',
-        'terabox': 'TeraBox Detected',
-        'gdrive': 'Google Drive Detected',
-        'media': 'Media / Video Detected',
-        'direct': 'Direct HTTP/S Detected'
+        'mega': 'Protocol: MEGA.nz',
+        'terabox': 'Protocol: TeraBox',
+        'gdrive': 'Protocol: Google Drive',
+        'media': 'Protocol: Video/Media Stream',
+        'direct': 'Protocol: Direct HTTP(S)'
       };
-      label.innerText = names[provider] || 'Detected: ' + provider;
+      label.innerText = names[provider] || 'Protocol: ' + provider;
     }
 
-    // Trigger initial detection
     detectProviderRealtime();
 
     async function pasteClipboard() {
@@ -384,12 +475,12 @@
         const text = await navigator.clipboard.readText();
         if (text) {
           urlInput.value = text.trim();
-          showToast('Pasted!', 'URL pasted from clipboard', 'info');
+          showToast('Pasted', 'URL pasted from clipboard', 'info');
           detectProviderRealtime();
           inspectUrl();
         }
       } catch (err) {
-        showToast('Clipboard Error', 'Please paste manually with Ctrl+V', 'error');
+        showToast('Clipboard Notice', 'Please paste manually with Ctrl+V', 'error');
       }
     }
 
@@ -404,14 +495,14 @@
       toastMessage.innerText = message;
 
       if (type === 'success') {
-        inner.className = 'glass rounded-2xl p-4 shadow-2xl flex items-start gap-3 border-l-4 border-emerald-500 bg-emerald-950/40';
-        icon.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>';
+        inner.className = 'panel rounded-lg p-3.5 shadow-xl flex items-start gap-3 border-l-4 border-emerald-500 bg-emerald-950/40';
+        icon.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>';
       } else if (type === 'error') {
-        inner.className = 'glass rounded-2xl p-4 shadow-2xl flex items-start gap-3 border-l-4 border-rose-500 bg-rose-950/40';
-        icon.innerHTML = '<i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400"></i>';
+        inner.className = 'panel rounded-lg p-3.5 shadow-xl flex items-start gap-3 border-l-4 border-rose-500 bg-rose-950/40';
+        icon.innerHTML = '<i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400"></i>';
       } else {
-        inner.className = 'glass rounded-2xl p-4 shadow-2xl flex items-start gap-3 border-l-4 border-indigo-500 bg-indigo-950/40';
-        icon.innerHTML = '<i data-lucide="info" class="w-5 h-5 text-indigo-400"></i>';
+        inner.className = 'panel rounded-lg p-3.5 shadow-xl flex items-start gap-3 border-l-4 border-indigo-500 bg-indigo-950/40';
+        icon.innerHTML = '<i data-lucide="info" class="w-4 h-4 text-indigo-400"></i>';
       }
       lucide.createIcons();
 
@@ -421,19 +512,19 @@
       setTimeout(() => {
         toast.classList.add('translate-x-full', 'opacity-0');
         toast.classList.remove('translate-x-0', 'opacity-100');
-      }, 3500);
+      }, 3000);
     }
 
     async function inspectUrl() {
       const url = urlInput.value.trim();
       if (!url) {
-        showToast('Empty Link', 'Please enter a download link first', 'error');
+        showToast('Empty Link', 'Please provide a valid download URL', 'error');
         return;
       }
 
       const btn = document.getElementById('inspect-btn');
       btn.disabled = true;
-      btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Inspecting...</span>';
+      btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Inspecting...</span>';
       lucide.createIcons();
 
       try {
@@ -443,35 +534,28 @@
           body: JSON.stringify({ url })
         });
         const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Could not inspect link metadata');
 
-        if (!res.ok) {
-          throw new Error(data.detail || 'Failed to inspect link');
-        }
-
-        // Show preview
         document.getElementById('preview-name').innerText = data.file_name;
         document.getElementById('preview-size').innerText = data.file_size_formatted;
-        document.getElementById('preview-type').innerText = data.file_extension || 'FILE';
-        document.getElementById('preview-provider-tag').innerText = data.provider || 'LINK';
-        
-        const preview = document.getElementById('inspect-preview');
-        preview.classList.remove('hidden');
-        showToast('Link Analyzed', `${data.file_name} (${data.file_size_formatted})`, 'success');
+        document.getElementById('preview-provider-tag').innerText = data.provider || 'URL';
+        document.getElementById('inspect-preview').classList.remove('hidden');
+        showToast('Inspect Success', `${data.file_name} (${data.file_size_formatted})`, 'success');
       } catch (err) {
-        showToast('Inspect Failed', err.message, 'error');
+        showToast('Inspect Error', err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i data-lucide="info" class="w-4 h-4 text-slate-400"></i><span>Inspect Info</span>';
+        btn.innerHTML = '<i data-lucide="info" class="w-3.5 h-3.5 text-slate-400"></i><span>Inspect</span>';
         lucide.createIcons();
       }
     }
 
-    async function startDownloadNow() {
+    async function startSingleDownload() {
       const url = urlInput.value.trim();
       const target_dir = targetDirInput.value.trim() || 'D:\\anime';
 
       if (!url) {
-        showToast('Empty Link', 'Please enter a download link', 'error');
+        showToast('Empty Link', 'Please enter a URL to download', 'error');
         return;
       }
 
@@ -482,33 +566,109 @@
           body: JSON.stringify({ url, target_dir })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Download request failed');
+        if (!res.ok) throw new Error(data.detail || 'Failed to queue download');
 
-        showToast('Download Queued', `Downloading ${data.task.file_name} to ${target_dir}`, 'success');
+        showToast('Queued', `${data.task.file_name} added to queue`, 'success');
+        document.getElementById('inspect-preview').classList.add('hidden');
         switchTab('tasks');
         loadTasks();
       } catch (err) {
-        showToast('Download Error', err.message, 'error');
+        showToast('Queue Error', err.message, 'error');
+      }
+    }
+
+    async function startBatchDownload() {
+      const urls = getValidBatchUrls();
+      const target_dir = targetDirInput.value.trim() || 'D:\\anime';
+
+      if (urls.length === 0) {
+        showToast('No URLs', 'Please enter at least one valid download link', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('batch-submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Queueing...</span>';
+      lucide.createIcons();
+
+      try {
+        const res = await fetch('/api/batch-download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ urls, target_dir })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to submit batch');
+
+        const successCount = data.tasks.length;
+        const errCount = data.errors.length;
+
+        showToast('Batch Queued', `${successCount} task(s) queued${errCount > 0 ? `, ${errCount} failed` : ''}`, 'success');
+        batchInput.value = '';
+        updateBatchStats();
+        switchTab('tasks');
+        loadTasks();
+      } catch (err) {
+        showToast('Batch Error', err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="layers" class="w-3.5 h-3.5"></i><span>Queue All Tasks</span>';
+        lucide.createIcons();
       }
     }
 
     function streamBrowserDownload() {
       const url = urlInput.value.trim();
       if (!url) {
-        showToast('Empty Link', 'Please enter a link first', 'error');
+        showToast('Empty Link', 'Please enter a URL first', 'error');
         return;
       }
-      showToast('Starting Stream', 'Browser streaming triggered...', 'info');
+      showToast('Streaming', 'Browser download initiated...', 'info');
       window.location.href = `/api/stream?url=${encodeURIComponent(url)}`;
     }
 
     async function cancelTask(taskId) {
       try {
         await fetch(`/api/tasks/${taskId}/cancel`, { method: 'POST' });
-        showToast('Cancelled', 'Download task stopped', 'info');
+        showToast('Stopped', 'Task cancelled', 'info');
         loadTasks();
       } catch (err) {
         showToast('Error', 'Failed to cancel task', 'error');
+      }
+    }
+
+    async function retryTask(taskId) {
+      try {
+        const res = await fetch(`/api/tasks/${taskId}/retry`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to retry task');
+        showToast('Re-queued', 'Task re-queued for download', 'success');
+        loadTasks();
+      } catch (err) {
+        showToast('Error', err.message, 'error');
+      }
+    }
+
+    async function clearFinishedTasks() {
+      try {
+        const res = await fetch('/api/tasks/clear-finished', { method: 'POST' });
+        const data = await res.json();
+        showToast('Cleaned', `${data.cleared_count} finished tasks cleared`, 'info');
+        loadTasks();
+      } catch (err) {
+        showToast('Error', 'Failed to clear finished tasks', 'error');
+      }
+    }
+
+    async function cancelAllTasks() {
+      if (!confirm('Are you sure you want to cancel all active and queued tasks?')) return;
+      try {
+        const res = await fetch('/api/tasks/cancel-all', { method: 'POST' });
+        const data = await res.json();
+        showToast('Cancelled', `${data.cancelled_count} tasks cancelled`, 'info');
+        loadTasks();
+      } catch (err) {
+        showToast('Error', 'Failed to cancel tasks', 'error');
       }
     }
 
@@ -525,22 +685,22 @@
       try {
         await fetch(`/api/open-directory?dir_path=${encodeURIComponent(dir)}`, { method: 'POST' });
       } catch (err) {
-        showToast('Error', 'Failed to open folder', 'error');
+        showToast('Error', 'Failed to open directory', 'error');
       }
     }
 
-    function getProviderBadgeColor(provider) {
+    function getProviderBadge(provider) {
       switch (provider) {
         case 'mega':
-          return { bg: 'bg-red-500/20 text-red-300 border-red-500/30', label: 'MEGA' };
+          return { bg: 'bg-red-500/10 text-red-400 border-red-500/20', label: 'MEGA' };
         case 'terabox':
-          return { bg: 'bg-sky-500/20 text-sky-300 border-sky-500/30', label: 'TERABOX' };
+          return { bg: 'bg-sky-500/10 text-sky-400 border-sky-500/20', label: 'TERABOX' };
         case 'gdrive':
-          return { bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30', label: 'GDRIVE' };
+          return { bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', label: 'GDRIVE' };
         case 'media':
-          return { bg: 'bg-purple-500/20 text-purple-300 border-purple-500/30', label: 'MEDIA' };
+          return { bg: 'bg-purple-500/10 text-purple-400 border-purple-500/20', label: 'MEDIA' };
         default:
-          return { bg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30', label: 'DIRECT' };
+          return { bg: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20', label: 'DIRECT' };
       }
     }
 
@@ -549,9 +709,13 @@
         const res = await fetch('/api/tasks');
         const data = await res.json();
         const tasks = data.tasks || [];
+        const stats = data.stats || {};
 
-        const activeCount = tasks.filter(t => t.status === 'DOWNLOADING' || t.status === 'QUEUED').length;
-        document.getElementById('badge-active-count').innerText = activeCount;
+        // Update Top Stats Bar
+        document.getElementById('stat-total-speed').innerText = stats.total_speed_formatted || '0.0 KB/s';
+        document.getElementById('stat-active').innerText = stats.active_count || 0;
+        document.getElementById('stat-queued').innerText = stats.queued_count || 0;
+        document.getElementById('badge-active-count').innerText = (stats.active_count || 0) + (stats.queued_count || 0);
 
         const container = document.getElementById('tasks-list');
         const empty = document.getElementById('empty-tasks');
@@ -564,78 +728,100 @@
 
         empty.classList.add('hidden');
         container.innerHTML = tasks.map(t => {
-          let badgeColor = 'bg-slate-700 text-slate-300';
-          let progressBg = 'bg-indigo-500';
+          let statusBadge = 'bg-slate-800 text-slate-400 border-slate-700';
+          let progressBg = 'bg-indigo-600';
 
           if (t.status === 'COMPLETED') {
-            badgeColor = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+            statusBadge = 'bg-emerald-950/60 text-emerald-400 border-emerald-700/50';
             progressBg = 'bg-emerald-500';
           } else if (t.status === 'FAILED') {
-            badgeColor = 'bg-rose-500/20 text-rose-400 border border-rose-500/30';
+            statusBadge = 'bg-rose-950/60 text-rose-400 border-rose-700/50';
             progressBg = 'bg-rose-500';
+          } else if (t.status === 'CANCELLED') {
+            statusBadge = 'bg-slate-800 text-slate-500 border-slate-700';
+            progressBg = 'bg-slate-700';
           } else if (t.status === 'DOWNLOADING') {
-            badgeColor = 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 animate-pulse-subtle';
-            progressBg = 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500';
+            statusBadge = 'bg-cyan-950/60 text-cyan-400 border-cyan-700/50';
+            progressBg = 'bg-indigo-500';
+          } else if (t.status === 'QUEUED') {
+            statusBadge = 'bg-slate-800 text-slate-400 border-slate-700';
+            progressBg = 'bg-slate-700';
           }
 
-          const providerInfo = getProviderBadgeColor(t.provider || 'direct');
+          const provider = getProviderBadge(t.provider || 'direct');
 
           return `
-            <div class="glass rounded-2xl p-4 md:p-5 shadow-lg border border-slate-700/60 transition hover:border-slate-600">
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-indigo-400 shrink-0">
-                    <i data-lucide="${t.status === 'COMPLETED' ? 'check' : (t.status === 'FAILED' ? 'alert-circle' : 'hard-drive')}" class="w-5 h-5"></i>
+            <div class="panel rounded-lg p-3.5 hover:border-slate-700 transition">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-2.5">
+                <div class="flex items-center gap-2.5 overflow-hidden">
+                  <div class="w-8 h-8 rounded bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-300 shrink-0">
+                    <i data-lucide="${t.status === 'COMPLETED' ? 'check' : (t.status === 'FAILED' ? 'alert-circle' : 'file')}" class="w-4 h-4"></i>
                   </div>
                   <div class="overflow-hidden">
                     <div class="flex items-center gap-2">
-                      <h4 class="font-semibold text-sm text-slate-100 truncate max-w-sm md:max-w-md" title="${t.file_name}">${t.file_name}</h4>
-                      <span class="text-[9px] font-mono px-1.5 py-0.5 rounded border uppercase ${providerInfo.bg}">${providerInfo.label}</span>
+                      <h4 class="font-semibold text-xs text-slate-100 truncate max-w-sm sm:max-w-md" title="${t.file_name}">${t.file_name}</h4>
+                      <span class="text-[9px] font-mono px-1.5 py-0.2 rounded border uppercase shrink-0 ${provider.bg}">${provider.label}</span>
                     </div>
-                    <p class="text-xs text-slate-400 font-mono mt-0.5 truncate">${t.target_dir}</p>
+                    <div class="text-[11px] text-slate-500 font-mono mt-0.5 truncate">${t.target_dir}</div>
                   </div>
                 </div>
 
-                <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                  <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${badgeColor}">
+                <div class="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
+                  <span class="text-[11px] font-mono px-2 py-0.5 rounded border uppercase ${statusBadge}">
                     ${t.status}
                   </span>
-                  ${t.status === 'DOWNLOADING' ? `
-                    <button onclick="cancelTask('${t.task_id}')" class="px-2.5 py-1 rounded-lg text-xs bg-rose-950/60 hover:bg-rose-900 border border-rose-700/60 text-rose-300 transition" title="Cancel Download">
+                  
+                  ${(t.status === 'DOWNLOADING' || t.status === 'QUEUED') ? `
+                    <button onclick="cancelTask('${t.task_id}')" class="px-2 py-0.5 rounded text-[11px] bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-800 transition" title="Cancel">
                       Cancel
                     </button>
                   ` : ''}
+
+                  ${(t.status === 'FAILED' || t.status === 'CANCELLED') ? `
+                    <button onclick="retryTask('${t.task_id}')" class="px-2 py-0.5 rounded text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1" title="Retry download">
+                      <i data-lucide="rotate-cw" class="w-3 h-3 text-indigo-400"></i>
+                      <span>Retry</span>
+                    </button>
+                  ` : ''}
+
                   ${t.status === 'COMPLETED' ? `
-                    <button onclick="openTaskFolder('${t.task_id}')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition flex items-center gap-1">
-                      <i data-lucide="folder" class="w-3.5 h-3.5 text-indigo-400"></i>
+                    <button onclick="openTaskFolder('${t.task_id}')" class="px-2 py-0.5 rounded text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1" title="Open file in Explorer">
+                      <i data-lucide="folder" class="w-3 h-3 text-cyan-400"></i>
                       <span>Show</span>
                     </button>
                   ` : ''}
                 </div>
               </div>
 
-              <!-- Progress Bar -->
-              <div class="w-full bg-slate-900 rounded-full h-3 overflow-hidden p-0.5 border border-slate-800 mb-2">
-                <div class="${progressBg} h-full rounded-full transition-all duration-300" style="width: ${t.progress_percent}%"></div>
+              <!-- Progress Track -->
+              <div class="w-full bg-slate-900 rounded h-1.5 overflow-hidden mb-2 border border-slate-800">
+                <div class="${progressBg} h-full transition-all duration-200" style="width: ${t.progress_percent}%"></div>
               </div>
 
-              <!-- Metrics -->
-              <div class="flex flex-wrap items-center justify-between text-xs font-mono text-slate-400 gap-2">
-                <div>
-                  <span class="text-slate-200 font-bold">${t.downloaded_formatted}</span> of ${t.file_size_formatted} (${t.progress_percent}%)
+              <!-- Monospace Metrics Footer -->
+              <div class="flex flex-wrap items-center justify-between text-[11px] font-mono text-slate-400 gap-2">
+                <div class="mono-num">
+                  <span class="text-slate-200 font-semibold">${t.downloaded_formatted}</span> of ${t.file_size_formatted} (${t.progress_percent}%)
                 </div>
+
                 ${t.status === 'DOWNLOADING' ? `
-                  <div class="flex items-center gap-3">
-                    <span class="text-indigo-400 font-semibold">${t.speed_formatted}</span>
-                    <span>•</span>
+                  <div class="flex items-center gap-3 mono-num">
+                    <span class="text-cyan-400 font-semibold">${t.speed_formatted}</span>
+                    <span class="text-slate-600">•</span>
                     <span>ETA: ${t.eta_formatted}</span>
                   </div>
                 ` : ''}
+
                 ${t.status === 'COMPLETED' ? `
-                  <span class="text-emerald-400 font-semibold">Downloaded in ${t.elapsed_seconds}s</span>
+                  <span class="text-emerald-400 mono-num">Finished in ${t.elapsed_seconds}s</span>
                 ` : ''}
+
                 ${t.status === 'FAILED' ? `
-                  <span class="text-rose-400">${t.error_message || 'Download Failed'}</span>
+                  <span class="text-rose-400 truncate max-w-xs" title="${t.error_message || 'Download Failed'}">${t.error_message || 'Download Failed'}</span>
+                ` : ''}
+
+                ${t.status === 'QUEUED' ? `
+                  <span class="text-slate-500">Waiting for slot...</span>
                 ` : ''}
               </div>
             </div>
@@ -659,24 +845,24 @@
         const container = document.getElementById('history-list');
 
         if (files.length === 0) {
-          container.innerHTML = '<div class="text-center py-8 text-slate-500 text-sm">No files in target directory</div>';
+          container.innerHTML = '<div class="p-6 text-center text-slate-500">No files in target directory</div>';
           return;
         }
 
         container.innerHTML = files.map(f => `
-          <div class="p-4 flex items-center justify-between hover:bg-slate-800/40 transition">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 shrink-0">
-                <i data-lucide="file" class="w-4 h-4"></i>
+          <div class="p-3 flex items-center justify-between hover:bg-slate-900/60 transition">
+            <div class="flex items-center gap-2.5 overflow-hidden">
+              <div class="w-7 h-7 rounded bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                <i data-lucide="file" class="w-3.5 h-3.5"></i>
               </div>
               <div class="overflow-hidden">
-                <h5 class="text-sm font-semibold text-slate-200 truncate max-w-sm sm:max-w-md" title="${f.name}">${f.name}</h5>
-                <span class="text-xs font-mono text-slate-400">${f.size_formatted}</span>
+                <h5 class="text-xs font-semibold text-slate-200 truncate max-w-sm sm:max-w-md" title="${f.name}">${f.name}</h5>
+                <span class="text-[11px] font-mono text-slate-500">${f.size_formatted}</span>
               </div>
             </div>
-            <button onclick="openTargetFolder()" class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5 border border-slate-700 shrink-0">
-              <i data-lucide="external-link" class="w-3.5 h-3.5 text-indigo-400"></i>
-              <span>Open in Folder</span>
+            <button onclick="openTargetFolder()" class="px-2.5 py-1 rounded text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1 border border-slate-700 shrink-0">
+              <i data-lucide="folder-open" class="w-3 h-3 text-slate-400"></i>
+              <span>Locate</span>
             </button>
           </div>
         `).join('');
@@ -697,14 +883,14 @@
       if (tab === 'tasks') {
         tasksContent.classList.remove('hidden');
         historyContent.classList.add('hidden');
-        btnTasks.className = 'pb-3 text-sm font-bold text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-2 transition';
-        btnHistory.className = 'pb-3 text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-2 transition';
+        btnTasks.className = 'pb-2 text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-1.5 transition';
+        btnHistory.className = 'pb-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-1.5 transition';
         loadTasks();
       } else {
         tasksContent.classList.add('hidden');
         historyContent.classList.remove('hidden');
-        btnHistory.className = 'pb-3 text-sm font-bold text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-2 transition';
-        btnTasks.className = 'pb-3 text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-2 transition';
+        btnHistory.className = 'pb-2 text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-1.5 transition';
+        btnTasks.className = 'pb-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-1.5 transition';
         loadHistory();
       }
     }
@@ -717,7 +903,20 @@
       }
     }
 
-    // Auto polling every 1 second
+    // Keyboard Shortcuts (Ctrl+Enter to submit)
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (currentMode === 'single') {
+          startSingleDownload();
+        } else {
+          startBatchDownload();
+        }
+      } else if (e.key === 'Escape') {
+        document.getElementById('inspect-preview').classList.add('hidden');
+      }
+    });
+
     setInterval(loadTasks, 1000);
     loadTasks();
     loadHistory();

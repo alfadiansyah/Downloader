@@ -5,7 +5,7 @@ import threading
 import requests
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from app.mega_engine import MegaEngine
+from app.universal_engine import UniversalEngine
 from mega.crypto import (
     a32_to_str,
     str_to_a32,
@@ -20,7 +20,8 @@ class DownloadTask:
         self.target_dir = target_dir
         self.file_info = file_info
         self.file_name = file_info['file_name']
-        self.file_size = file_info['file_size']
+        self.file_size = file_info.get('file_size', 0)
+        self.provider = file_info.get('provider', 'direct')
         
         self.downloaded_bytes = 0
         self.progress_percent = 0.0
@@ -41,7 +42,7 @@ class DownloadTask:
             "url": self.url,
             "file_name": self.file_name,
             "file_size": self.file_size,
-            "file_size_formatted": self._format_size(self.file_size),
+            "file_size_formatted": self._format_size(self.file_size) if self.file_size > 0 else "Unknown Size",
             "downloaded_bytes": self.downloaded_bytes,
             "downloaded_formatted": self._format_size(self.downloaded_bytes),
             "progress_percent": round(self.progress_percent, 1),
@@ -50,6 +51,7 @@ class DownloadTask:
             "eta_formatted": self._format_eta(self.eta_seconds),
             "eta_seconds": self.eta_seconds,
             "status": self.status,
+            "provider": self.provider,
             "error_message": self.error_message,
             "target_dir": self.target_dir,
             "target_path": self.target_path,
@@ -91,24 +93,21 @@ class DownloadTask:
 
 
 class TaskManager:
-    def __init__(self, mega_engine: MegaEngine):
-        self.engine = mega_engine
+    def __init__(self, universal_engine: UniversalEngine):
+        self.engine = universal_engine
         self.tasks: Dict[str, DownloadTask] = {}
         self.lock = threading.Lock()
 
     def start_download(self, url: str, target_dir: str = r"D:\anime") -> DownloadTask:
-        # 1. Fetch info
-        info = self.engine.get_file_info(url)
+        info = self.engine.inspect_url(url)
         task_id = str(uuid.uuid4())[:8]
 
-        # Ensure directory exists
         Path(target_dir).mkdir(parents=True, exist_ok=True)
 
         task = DownloadTask(task_id, url, target_dir, info)
         with self.lock:
             self.tasks[task_id] = task
 
-        # Start thread
         thread = threading.Thread(target=self._run_task, args=(task,), daemon=True)
         thread.start()
         return task
@@ -132,13 +131,39 @@ class TaskManager:
 
     def get_all_tasks(self) -> List[Dict[str, Any]]:
         with self.lock:
-            # Sort newest first
             return [t.to_dict() for t in sorted(self.tasks.values(), key=lambda x: x.start_time or 0, reverse=True)]
 
     def _run_task(self, task: DownloadTask):
         task.status = "DOWNLOADING"
         task.start_time = time.time()
-        
+        provider = task.provider
+
+        try:
+            if provider == "mega":
+                self._download_mega(task)
+            elif provider == "media":
+                self._download_media(task)
+            elif provider == "gdrive":
+                self._download_gdrive(task)
+            else:
+                self._download_stream(task)
+                
+            if task.status == "DOWNLOADING":
+                task.status = "COMPLETED"
+                task.progress_percent = 100.0
+                task.speed_bytes_sec = 0.0
+                task.eta_seconds = 0
+                task.finish_time = time.time()
+
+        except Exception as e:
+            if not task.cancel_event.is_set():
+                task.status = "FAILED"
+                task.error_message = str(e)
+            else:
+                task.status = "CANCELLED"
+            task.finish_time = time.time()
+
+    def _download_mega(self, task: DownloadTask):
         info = task.file_info
         file_url = info['file_url']
         file_size = info['file_size']
@@ -149,89 +174,136 @@ class TaskManager:
         part_path = Path(task.target_dir) / f"{task.file_name}.part"
         final_path = Path(task.target_dir) / task.file_name
 
-        try:
-            resp = requests.get(file_url, stream=True, timeout=30)
-            resp.raise_for_status()
-            input_file = resp.raw
+        resp = requests.get(file_url, stream=True, timeout=30)
+        resp.raise_for_status()
+        input_file = resp.raw
 
-            aes, k_str = self.engine.create_decryptor(k, iv)
-            
-            mac_str = '\0' * 16
-            mac_encryptor = AES.new(k_str, AES.MODE_CBC, mac_str.encode("utf8"))
-            iv_str = a32_to_str([iv[0], iv[1], iv[0], iv[1]])
+        aes, k_str = self.engine.mega.create_decryptor(k, iv)
+        mac_str = '\0' * 16
+        mac_encryptor = AES.new(k_str, AES.MODE_CBC, mac_str.encode("utf8"))
+        iv_str = a32_to_str([iv[0], iv[1], iv[0], iv[1]])
 
-            speed_timer = time.time()
-            bytes_since_timer = 0
+        speed_timer = time.time()
+        bytes_since_timer = 0
 
-            with open(part_path, 'wb') as f_out:
-                for _, chunk_size in get_chunks(file_size):
-                    if task.cancel_event.is_set():
-                        task.status = "CANCELLED"
-                        break
+        with open(part_path, 'wb') as f_out:
+            for _, chunk_size in get_chunks(file_size):
+                if task.cancel_event.is_set():
+                    task.status = "CANCELLED"
+                    break
 
-                    chunk = input_file.read(chunk_size)
-                    if not chunk:
-                        break
+                chunk = input_file.read(chunk_size)
+                if not chunk:
+                    break
 
-                    dec_chunk = aes.decrypt(chunk)
-                    f_out.write(dec_chunk)
+                dec_chunk = aes.decrypt(chunk)
+                f_out.write(dec_chunk)
 
-                    # Update CBC-MAC
-                    encryptor = AES.new(k_str, AES.MODE_CBC, iv_str)
-                    for i in range(0, len(dec_chunk) - 16, 16):
-                        encryptor.encrypt(dec_chunk[i:i + 16])
-                    i = (i + 16) if file_size > 16 else 0
-                    block = dec_chunk[i:i + 16]
-                    if len(block) % 16:
-                        block += b'\0' * (16 - (len(block) % 16))
-                    mac_str = mac_encryptor.encrypt(encryptor.encrypt(block))
+                encryptor = AES.new(k_str, AES.MODE_CBC, iv_str)
+                for i in range(0, len(dec_chunk) - 16, 16):
+                    encryptor.encrypt(dec_chunk[i:i + 16])
+                i = (i + 16) if file_size > 16 else 0
+                block = dec_chunk[i:i + 16]
+                if len(block) % 16:
+                    block += b'\0' * (16 - (len(block) % 16))
+                mac_str = mac_encryptor.encrypt(encryptor.encrypt(block))
 
-                    chunk_len = len(dec_chunk)
-                    task.downloaded_bytes += chunk_len
-                    bytes_since_timer += chunk_len
-                    task.progress_percent = (task.downloaded_bytes / file_size) * 100 if file_size > 0 else 0
+                chunk_len = len(dec_chunk)
+                task.downloaded_bytes += chunk_len
+                bytes_since_timer += chunk_len
+                task.progress_percent = (task.downloaded_bytes / file_size) * 100 if file_size > 0 else 0
 
-                    now = time.time()
-                    elapsed_interval = now - speed_timer
-                    if elapsed_interval >= 1.0:
-                        task.speed_bytes_sec = bytes_since_timer / elapsed_interval
-                        speed_timer = now
-                        bytes_since_timer = 0
-                        remaining_bytes = file_size - task.downloaded_bytes
-                        if task.speed_bytes_sec > 0:
-                            task.eta_seconds = int(remaining_bytes / task.speed_bytes_sec)
+                now = time.time()
+                elapsed_interval = now - speed_timer
+                if elapsed_interval >= 1.0:
+                    task.speed_bytes_sec = bytes_since_timer / elapsed_interval
+                    speed_timer = now
+                    bytes_since_timer = 0
+                    if task.speed_bytes_sec > 0:
+                        task.eta_seconds = int((file_size - task.downloaded_bytes) / task.speed_bytes_sec)
 
-            if task.cancel_event.is_set():
-                if part_path.exists():
-                    try:
-                        part_path.unlink()
-                    except Exception:
-                        pass
-                return
-
-            # Verification
-            file_mac = str_to_a32(mac_str)
-            if (file_mac[0] ^ file_mac[1], file_mac[2] ^ file_mac[3]) != meta_mac:
-                # Warning, but we still rename
-                pass
-
-            if final_path.exists():
-                final_path.unlink()
-            part_path.rename(final_path)
-
-            task.status = "COMPLETED"
-            task.progress_percent = 100.0
-            task.downloaded_bytes = file_size
-            task.speed_bytes_sec = 0.0
-            task.eta_seconds = 0
-            task.finish_time = time.time()
-
-        except Exception as e:
-            task.status = "FAILED"
-            task.error_message = str(e)
-            task.finish_time = time.time()
+        if task.cancel_event.is_set():
             if part_path.exists():
-                try:
-                    part_path.unlink()
-                except Exception:
-                    pass
+                try: part_path.unlink()
+                except Exception: pass
+            return
+
+        file_mac = str_to_a32(mac_str)
+        if final_path.exists():
+            final_path.unlink()
+        part_path.rename(final_path)
+
+    def _download_stream(self, task: DownloadTask):
+        url = task.file_info.get('direct_url') or task.url
+        part_path = Path(task.target_dir) / f"{task.file_name}.part"
+        final_path = Path(task.target_dir) / task.file_name
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        resp = requests.get(url, headers=headers, stream=True, timeout=30)
+        resp.raise_for_status()
+
+        total = int(resp.headers.get('content-length', 0))
+        if total > 0 and task.file_size == 0:
+            task.file_size = total
+
+        speed_timer = time.time()
+        bytes_since_timer = 0
+
+        with open(part_path, 'wb') as f_out:
+            for chunk in resp.iter_content(chunk_size=128 * 1024):
+                if task.cancel_event.is_set():
+                    task.status = "CANCELLED"
+                    break
+                if not chunk:
+                    continue
+                f_out.write(chunk)
+                chunk_len = len(chunk)
+                task.downloaded_bytes += chunk_len
+                bytes_since_timer += chunk_len
+
+                if task.file_size > 0:
+                    task.progress_percent = (task.downloaded_bytes / task.file_size) * 100
+
+                now = time.time()
+                elapsed = now - speed_timer
+                if elapsed >= 1.0:
+                    task.speed_bytes_sec = bytes_since_timer / elapsed
+                    speed_timer = now
+                    bytes_since_timer = 0
+                    if task.speed_bytes_sec > 0 and task.file_size > task.downloaded_bytes:
+                        task.eta_seconds = int((task.file_size - task.downloaded_bytes) / task.speed_bytes_sec)
+
+        if task.cancel_event.is_set():
+            if part_path.exists():
+                try: part_path.unlink()
+                except Exception: pass
+            return
+
+        if final_path.exists():
+            final_path.unlink()
+        part_path.rename(final_path)
+
+    def _download_media(self, task: DownloadTask):
+        def hook(d):
+            if task.cancel_event.is_set():
+                raise KeyboardInterrupt("Cancelled")
+            if d['status'] == 'downloading':
+                task.downloaded_bytes = d.get('downloaded_bytes', 0)
+                total = d.get('total_bytes') or d.get('total_bytes_estimate') or 0
+                if total > 0:
+                    task.file_size = total
+                    task.progress_percent = (task.downloaded_bytes / total) * 100
+                task.speed_bytes_sec = d.get('speed', 0) or 0
+                task.eta_seconds = d.get('eta', 0) or 0
+
+        self.engine.ytdlp.download(task.url, task.target_dir, progress_hook=hook)
+
+    def _download_gdrive(self, task: DownloadTask):
+        final_path = Path(task.target_dir) / task.file_name
+        self.engine.gdrive.download_file(task.url, str(final_path))
+        if final_path.exists():
+            task.downloaded_bytes = final_path.stat().st_size
+            task.file_size = task.downloaded_bytes
+            task.progress_percent = 100.0

@@ -7,10 +7,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from app.mega_engine import MegaEngine
+from app.universal_engine import UniversalEngine
 from app.task_manager import TaskManager, DownloadTask
 
-app = FastAPI(title="MEGA Web Downloader Pro", version="1.0.0")
+app = FastAPI(title="OmniDownloader Pro", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-engine = MegaEngine()
+engine = UniversalEngine()
 task_manager = TaskManager(engine)
 
 # Mount static files
@@ -38,17 +38,24 @@ class DownloadRequest(BaseModel):
 def get_index():
     return FileResponse(str(static_dir / "index.html"))
 
+@app.get("/api/detect")
+def detect_provider(url: str = Query(...)):
+    provider = engine.detect_provider(url)
+    return {"provider": provider}
+
 @app.post("/api/inspect")
 def inspect_url(req: InspectRequest):
     try:
-        info = engine.get_file_info(req.url)
+        info = engine.inspect_url(req.url)
+        size = info.get("file_size", 0)
         return {
             "success": True,
+            "provider": info.get("provider", "direct"),
             "file_name": info["file_name"],
-            "file_size": info["file_size"],
-            "file_size_formatted": DownloadTask._format_size(info["file_size"]),
-            "file_extension": info["file_extension"],
-            "file_handle": info["file_handle"]
+            "file_size": size,
+            "file_size_formatted": DownloadTask._format_size(size) if size > 0 else "Dynamic / Stream",
+            "file_extension": info.get("file_extension", ""),
+            "thumbnail": info.get("thumbnail")
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -99,16 +106,33 @@ def open_directory(dir_path: str = Query(r"D:\anime")):
 @app.get("/api/stream")
 def stream_download(url: str = Query(...)):
     """
-    Directly streams decrypted MEGA file chunks to browser for native download!
+    Directly streams file chunks to browser for native download!
     """
+    provider = engine.detect_provider(url)
     try:
-        info = engine.get_file_info(url)
-        headers = {
-            "Content-Disposition": f'attachment; filename="{info["file_name"]}"',
-            "Content-Length": str(info["file_size"]),
-            "Content-Type": "application/octet-stream"
-        }
-        return StreamingResponse(engine.stream_decrypted_chunks(info), headers=headers)
+        info = engine.inspect_url(url)
+        if provider == "mega":
+            headers = {
+                "Content-Disposition": f'attachment; filename="{info["file_name"]}"',
+                "Content-Length": str(info["file_size"]),
+                "Content-Type": "application/octet-stream"
+            }
+            return StreamingResponse(engine.mega.stream_decrypted_chunks(info), headers=headers)
+        else:
+            direct_url = info.get("direct_url") or url
+            import requests
+            def stream_gen():
+                with requests.get(direct_url, stream=True) as r:
+                    for chunk in r.iter_content(chunk_size=128 * 1024):
+                        if chunk:
+                            yield chunk
+            headers = {
+                "Content-Disposition": f'attachment; filename="{info["file_name"]}"',
+                "Content-Type": "application/octet-stream"
+            }
+            if info.get("file_size"):
+                headers["Content-Length"] = str(info["file_size"])
+            return StreamingResponse(stream_gen(), headers=headers)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MEGA Web Downloader Pro</title>
+  <title>OmniDownloader Pro - Universal Cloud & Media Downloader</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>
     tailwind.config = {
@@ -19,11 +19,12 @@
             mono: ['JetBrains Mono', 'monospace'],
           },
           colors: {
-            mega: {
-              red: '#ea1b25',
-              dark: '#0f172a',
-              card: '#1e293b',
-              accent: '#38bdf8'
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
             }
           }
         }
@@ -32,19 +33,22 @@
   </script>
   <style>
     body {
-      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #090d16 60%, #030712 100%);
+      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0a0d18 50%, #030712 100%);
       min-height: 100vh;
     }
     .glass {
-      background: rgba(30, 41, 59, 0.7);
-      backdrop-filter: blur(12px);
+      background: rgba(18, 24, 38, 0.75);
+      backdrop-filter: blur(14px);
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
-    .glow-red {
-      box-shadow: 0 0 25px rgba(234, 27, 37, 0.35);
+    .glow-indigo {
+      box-shadow: 0 0 25px rgba(99, 102, 241, 0.35);
     }
     .glow-cyan {
       box-shadow: 0 0 25px rgba(56, 189, 248, 0.25);
+    }
+    .glow-red {
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.35);
     }
     @keyframes pulse-subtle {
       0%, 100% { opacity: 1; }
@@ -53,13 +57,22 @@
     .animate-pulse-subtle {
       animation: pulse-subtle 2s infinite ease-in-out;
     }
+    .provider-pill {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .provider-pill.active {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+      border-color: rgba(99, 102, 241, 0.9);
+      background: rgba(99, 102, 241, 0.2);
+    }
   </style>
 </head>
-<body class="text-slate-100 font-sans antialiased selection:bg-red-500 selection:text-white">
+<body class="text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white">
 
   <!-- Notification Toast -->
   <div id="toast" class="fixed top-5 right-5 z-50 transform transition-all duration-300 translate-x-full opacity-0 max-w-md pointer-events-none">
-    <div id="toast-inner" class="glass rounded-xl p-4 shadow-2xl flex items-start gap-3 border-l-4">
+    <div id="toast-inner" class="glass rounded-2xl p-4 shadow-2xl flex items-start gap-3 border-l-4">
       <div id="toast-icon"></div>
       <div>
         <h4 id="toast-title" class="font-semibold text-sm"></h4>
@@ -72,28 +85,28 @@
 
     <!-- Header Navigation -->
     <header class="flex flex-col md:flex-row items-center justify-between gap-4 pb-8 mb-8 border-b border-slate-800/80">
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-500 flex items-center justify-center glow-red shadow-lg">
-          <i data-lucide="cloud-download" class="w-6 h-6 text-white"></i>
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center glow-indigo shadow-lg">
+          <i data-lucide="download-cloud" class="w-6 h-6 text-white"></i>
         </div>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-2xl font-bold tracking-tight">MEGA<span class="text-red-500">Loader</span> Web</h1>
-            <span class="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">Pro Engine</span>
+          <div class="flex items-center gap-2.5">
+            <h1 class="text-2xl font-extrabold tracking-tight">Omni<span class="text-indigo-400">Downloader</span> Pro</h1>
+            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Universal v2.0</span>
           </div>
-          <p class="text-xs text-slate-400">High-speed decryptor & local stream downloader for MEGA.nz</p>
+          <p class="text-xs text-slate-400">Universal high-speed downloader for MEGA, TeraBox, Google Drive, Media & Direct Links</p>
         </div>
       </div>
 
-      <!-- Quick Actions / Status -->
+      <!-- Quick Actions / Target Status -->
       <div class="flex items-center gap-3">
-        <div class="flex items-center gap-2 text-xs bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-2">
+        <div class="flex items-center gap-2 text-xs bg-slate-900/90 border border-slate-700/60 rounded-xl px-3.5 py-2">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-slate-300 font-medium">Local Target:</span>
-          <span id="header-target-dir" class="font-mono text-cyan-400">D:\anime</span>
+          <span class="text-slate-400 font-medium">Save Dir:</span>
+          <span id="header-target-dir" class="font-mono text-indigo-300 font-semibold">D:\anime</span>
         </div>
-        <button onclick="openTargetFolder()" class="glass hover:bg-slate-700/60 transition px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 text-slate-300 hover:text-white" title="Open Folder in Windows Explorer">
-          <i data-lucide="folder-open" class="w-4 h-4 text-cyan-400"></i>
+        <button onclick="openTargetFolder()" class="glass hover:bg-slate-800/80 transition px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 text-slate-300 hover:text-white" title="Open Folder in Windows Explorer">
+          <i data-lucide="folder-open" class="w-4 h-4 text-indigo-400"></i>
           <span>Open Folder</span>
         </button>
       </div>
@@ -101,13 +114,38 @@
 
     <!-- Main Downloader Card -->
     <section class="glass rounded-3xl p-6 md:p-8 mb-8 shadow-2xl relative overflow-hidden">
-      <div class="absolute -top-24 -right-24 w-72 h-72 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
-      <div class="absolute -bottom-24 -left-24 w-72 h-72 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -top-24 -right-24 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -left-24 w-72 h-72 bg-pink-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
-      <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200">
-        <i data-lucide="link" class="w-5 h-5 text-red-500"></i>
-        <span>Download from MEGA Link</span>
-      </h2>
+      <!-- Supported Providers Bar -->
+      <div class="mb-5">
+        <div class="flex items-center justify-between mb-2.5">
+          <span class="text-xs font-semibold text-slate-400 tracking-wider uppercase">Supported Providers & Protocols</span>
+          <span id="detected-provider-label" class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">Auto-detecting...</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2" id="provider-badges">
+          <div id="badge-mega" class="provider-pill flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-medium text-slate-300">
+            <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+            <span>MEGA.nz</span>
+          </div>
+          <div id="badge-terabox" class="provider-pill flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-medium text-slate-300">
+            <div class="w-2.5 h-2.5 rounded-full bg-sky-400"></div>
+            <span>TeraBox</span>
+          </div>
+          <div id="badge-gdrive" class="provider-pill flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-medium text-slate-300">
+            <div class="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+            <span>Google Drive</span>
+          </div>
+          <div id="badge-media" class="provider-pill flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-medium text-slate-300">
+            <div class="w-2.5 h-2.5 rounded-full bg-purple-400"></div>
+            <span>YouTube / Media</span>
+          </div>
+          <div id="badge-direct" class="provider-pill flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-medium text-slate-300">
+            <div class="w-2.5 h-2.5 rounded-full bg-cyan-400"></div>
+            <span>Direct HTTP(S)</span>
+          </div>
+        </div>
+      </div>
 
       <!-- URL Input Area -->
       <div class="space-y-4">
@@ -115,8 +153,8 @@
           <input 
             type="text" 
             id="url-input"
-            placeholder="Paste MEGA URL (e.g. https://mega.nz/file/...#...)"
-            class="w-full bg-slate-900/90 border border-slate-700/80 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 rounded-2xl px-5 py-4 text-sm font-mono text-slate-100 placeholder-slate-500 outline-none transition pr-28 shadow-inner"
+            placeholder="Paste download link here (MEGA, TeraBox, Google Drive, YouTube, Direct File URL)..."
+            class="w-full bg-slate-900/90 border border-slate-700/80 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-2xl px-5 py-4 text-sm font-mono text-slate-100 placeholder-slate-500 outline-none transition pr-28 shadow-inner"
             value="https://mega.nz/file/0clAHB7Q#rltTN0QpVYV7wAHpgV5JBB6PrS8_K2sRk-oRVnhmVZA"
           />
           <button 
@@ -128,7 +166,7 @@
           </button>
         </div>
 
-        <!-- Target Folder Settings -->
+        <!-- Target Folder Settings & Inspect -->
         <div class="flex flex-col sm:flex-row items-center gap-3">
           <div class="w-full sm:w-2/3 flex items-center bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2 text-xs">
             <span class="text-slate-400 font-medium mr-2 whitespace-nowrap">Save to PC:</span>
@@ -136,7 +174,7 @@
               type="text" 
               id="target-dir-input" 
               value="D:\anime" 
-              class="w-full bg-transparent font-mono text-cyan-300 outline-none"
+              class="w-full bg-transparent font-mono text-indigo-300 outline-none"
               placeholder="e.g. D:\anime or D:\Downloads"
             />
           </div>
@@ -154,14 +192,17 @@
         </div>
 
         <!-- Inspected File Preview Banner (Hidden by default) -->
-        <div id="inspect-preview" class="hidden glass rounded-2xl p-4 border border-cyan-500/30 bg-cyan-950/20">
+        <div id="inspect-preview" class="hidden glass rounded-2xl p-4 border border-indigo-500/30 bg-indigo-950/20">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                <i data-lucide="file-archive" class="w-5 h-5"></i>
+              <div id="preview-icon-wrapper" class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+                <i id="preview-icon" data-lucide="file-archive" class="w-5 h-5"></i>
               </div>
-              <div>
-                <h4 id="preview-name" class="font-bold text-sm text-slate-100"></h4>
+              <div class="overflow-hidden">
+                <div class="flex items-center gap-2">
+                  <h4 id="preview-name" class="font-bold text-sm text-slate-100 truncate max-w-sm sm:max-w-md"></h4>
+                  <span id="preview-provider-tag" class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"></span>
+                </div>
                 <div class="flex items-center gap-3 text-xs text-slate-400 font-mono mt-0.5">
                   <span id="preview-size"></span>
                   <span>•</span>
@@ -170,19 +211,19 @@
               </div>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 shrink-0">
               <button 
                 onclick="startDownloadNow()"
-                class="px-5 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-lg glow-red transition flex items-center gap-2"
+                class="px-5 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg glow-indigo transition flex items-center gap-2"
               >
                 <i data-lucide="download" class="w-4 h-4"></i>
-                <span>Download to D:\anime</span>
+                <span>Download to Local</span>
               </button>
 
               <button 
                 onclick="streamBrowserDownload()"
                 class="px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
-                title="Download directly to your browser download folder"
+                title="Download directly to your browser downloads folder"
               >
                 <i data-lucide="globe" class="w-4 h-4"></i>
               </button>
@@ -195,7 +236,7 @@
           <button 
             id="main-download-btn"
             onclick="startDownloadNow()"
-            class="w-full sm:flex-1 py-3.5 px-6 rounded-2xl text-sm font-bold bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-xl glow-red transition flex items-center justify-center gap-2.5"
+            class="w-full sm:flex-1 py-3.5 px-6 rounded-2xl text-sm font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:via-purple-500 hover:to-indigo-500 text-white shadow-xl glow-indigo transition flex items-center justify-center gap-2.5"
           >
             <i data-lucide="download-cloud" class="w-5 h-5"></i>
             <span>Start Background Download (to D:\anime)</span>
@@ -215,10 +256,10 @@
     <!-- Tabs Navigation -->
     <div class="flex items-center justify-between mb-4 border-b border-slate-800">
       <div class="flex gap-4">
-        <button id="tab-btn-tasks" onclick="switchTab('tasks')" class="pb-3 text-sm font-bold text-red-500 border-b-2 border-red-500 flex items-center gap-2 transition">
+        <button id="tab-btn-tasks" onclick="switchTab('tasks')" class="pb-3 text-sm font-bold text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-2 transition">
           <i data-lucide="activity" class="w-4 h-4"></i>
           <span>Active Downloads</span>
-          <span id="badge-active-count" class="text-xs px-2 py-0.2 rounded-full bg-red-500/20 text-red-400">0</span>
+          <span id="badge-active-count" class="text-xs px-2 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300">0</span>
         </button>
         <button id="tab-btn-history" onclick="switchTab('history')" class="pb-3 text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-2 transition">
           <i data-lucide="folder" class="w-4 h-4"></i>
@@ -235,11 +276,11 @@
     <!-- Tab 1: Tasks Container -->
     <div id="tab-content-tasks" class="space-y-4">
       <div id="empty-tasks" class="text-center py-12 glass rounded-2xl">
-        <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-500">
+        <div class="w-12 h-12 rounded-full bg-slate-800/80 flex items-center justify-center mx-auto mb-3 text-slate-500">
           <i data-lucide="inbox" class="w-6 h-6"></i>
         </div>
-        <p class="text-sm font-medium text-slate-400">No active downloads right now</p>
-        <p class="text-xs text-slate-500 mt-1">Paste a MEGA link above to start downloading</p>
+        <p class="text-sm font-medium text-slate-300">No active downloads right now</p>
+        <p class="text-xs text-slate-500 mt-1">Paste any supported link above (MEGA, TeraBox, Google Drive, Media, or Direct Link)</p>
       </div>
 
       <div id="tasks-list" class="space-y-3"></div>
@@ -256,22 +297,95 @@
 
   <script>
     let activeTab = 'tasks';
-    let pollInterval = null;
+    let currentDetectedProvider = 'unknown';
+    let detectTimeout = null;
 
     // Initialize Lucide icons
     lucide.createIcons();
 
     // Auto-update header target dir input
-    document.getElementById('target-dir-input').addEventListener('input', (e) => {
+    const targetDirInput = document.getElementById('target-dir-input');
+    targetDirInput.addEventListener('input', (e) => {
       document.getElementById('header-target-dir').innerText = e.target.value || 'D:\\anime';
     });
+
+    // Real-time URL detector
+    const urlInput = document.getElementById('url-input');
+    urlInput.addEventListener('input', () => {
+      clearTimeout(detectTimeout);
+      detectTimeout = setTimeout(detectProviderRealtime, 250);
+    });
+
+    async function detectProviderRealtime() {
+      const url = urlInput.value.trim();
+      const badgeList = ['mega', 'terabox', 'gdrive', 'media', 'direct'];
+      badgeList.forEach(id => {
+        const b = document.getElementById(`badge-${id}`);
+        if (b) b.classList.remove('active');
+      });
+
+      if (!url) {
+        document.getElementById('detected-provider-label').innerText = 'Awaiting link...';
+        return;
+      }
+
+      // Quick local regex pre-classification
+      let quick = null;
+      if (url.includes('mega.nz')) quick = 'mega';
+      else if (/terabox|1024tera|teraboxapp|freeterabox/i.test(url)) quick = 'terabox';
+      else if (/drive\.google\.com/i.test(url)) quick = 'gdrive';
+      else if (/youtube\.com|youtu\.be|twitter\.com|x\.com|tiktok\.com|instagram\.com/i.test(url)) quick = 'media';
+      else if (/^https?:\/\//i.test(url)) quick = 'direct';
+
+      if (quick) {
+        highlightProviderBadge(quick);
+      }
+
+      try {
+        const res = await fetch(`/api/detect?url=${encodeURIComponent(url)}`);
+        if (res.ok) {
+          const data = await res.json();
+          currentDetectedProvider = data.provider;
+          highlightProviderBadge(data.provider);
+        }
+      } catch (e) {
+        // Fallback to quick
+      }
+    }
+
+    function highlightProviderBadge(provider) {
+      const badgeList = ['mega', 'terabox', 'gdrive', 'media', 'direct'];
+      badgeList.forEach(id => {
+        const b = document.getElementById(`badge-${id}`);
+        if (b) b.classList.remove('active');
+      });
+
+      const label = document.getElementById('detected-provider-label');
+      const targetBadge = document.getElementById(`badge-${provider}`);
+      if (targetBadge) {
+        targetBadge.classList.add('active');
+      }
+
+      const names = {
+        'mega': 'MEGA.nz Detected',
+        'terabox': 'TeraBox Detected',
+        'gdrive': 'Google Drive Detected',
+        'media': 'Media / Video Detected',
+        'direct': 'Direct HTTP/S Detected'
+      };
+      label.innerText = names[provider] || 'Detected: ' + provider;
+    }
+
+    // Trigger initial detection
+    detectProviderRealtime();
 
     async function pasteClipboard() {
       try {
         const text = await navigator.clipboard.readText();
         if (text) {
-          document.getElementById('url-input').value = text;
+          urlInput.value = text.trim();
           showToast('Pasted!', 'URL pasted from clipboard', 'info');
+          detectProviderRealtime();
           inspectUrl();
         }
       } catch (err) {
@@ -290,14 +404,14 @@
       toastMessage.innerText = message;
 
       if (type === 'success') {
-        inner.className = 'glass rounded-xl p-4 shadow-2xl flex items-start gap-3 border-l-4 border-emerald-500 bg-emerald-950/40';
+        inner.className = 'glass rounded-2xl p-4 shadow-2xl flex items-start gap-3 border-l-4 border-emerald-500 bg-emerald-950/40';
         icon.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>';
       } else if (type === 'error') {
-        inner.className = 'glass rounded-xl p-4 shadow-2xl flex items-start gap-3 border-l-4 border-red-500 bg-red-950/40';
-        icon.innerHTML = '<i data-lucide="alert-triangle" class="w-5 h-5 text-red-400"></i>';
+        inner.className = 'glass rounded-2xl p-4 shadow-2xl flex items-start gap-3 border-l-4 border-rose-500 bg-rose-950/40';
+        icon.innerHTML = '<i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400"></i>';
       } else {
-        inner.className = 'glass rounded-xl p-4 shadow-2xl flex items-start gap-3 border-l-4 border-cyan-500 bg-cyan-950/40';
-        icon.innerHTML = '<i data-lucide="info" class="w-5 h-5 text-cyan-400"></i>';
+        inner.className = 'glass rounded-2xl p-4 shadow-2xl flex items-start gap-3 border-l-4 border-indigo-500 bg-indigo-950/40';
+        icon.innerHTML = '<i data-lucide="info" class="w-5 h-5 text-indigo-400"></i>';
       }
       lucide.createIcons();
 
@@ -311,9 +425,9 @@
     }
 
     async function inspectUrl() {
-      const url = document.getElementById('url-input').value.trim();
+      const url = urlInput.value.trim();
       if (!url) {
-        showToast('Empty Link', 'Please enter a MEGA link', 'error');
+        showToast('Empty Link', 'Please enter a download link first', 'error');
         return;
       }
 
@@ -331,15 +445,18 @@
         const data = await res.json();
 
         if (!res.ok) {
-          throw new Error(data.detail || 'Failed to inspect MEGA URL');
+          throw new Error(data.detail || 'Failed to inspect link');
         }
 
         // Show preview
         document.getElementById('preview-name').innerText = data.file_name;
         document.getElementById('preview-size').innerText = data.file_size_formatted;
         document.getElementById('preview-type').innerText = data.file_extension || 'FILE';
-        document.getElementById('inspect-preview').classList.remove('hidden');
-        showToast('File Found', `${data.file_name} (${data.file_size_formatted})`, 'success');
+        document.getElementById('preview-provider-tag').innerText = data.provider || 'LINK';
+        
+        const preview = document.getElementById('inspect-preview');
+        preview.classList.remove('hidden');
+        showToast('Link Analyzed', `${data.file_name} (${data.file_size_formatted})`, 'success');
       } catch (err) {
         showToast('Inspect Failed', err.message, 'error');
       } finally {
@@ -350,11 +467,11 @@
     }
 
     async function startDownloadNow() {
-      const url = document.getElementById('url-input').value.trim();
-      const target_dir = document.getElementById('target-dir-input').value.trim() || 'D:\\anime';
+      const url = urlInput.value.trim();
+      const target_dir = targetDirInput.value.trim() || 'D:\\anime';
 
       if (!url) {
-        showToast('Empty Link', 'Please enter a MEGA link', 'error');
+        showToast('Empty Link', 'Please enter a download link', 'error');
         return;
       }
 
@@ -367,21 +484,21 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Download request failed');
 
-        showToast('Download Started', `Downloading ${data.task.file_name} to ${target_dir}`, 'success');
+        showToast('Download Queued', `Downloading ${data.task.file_name} to ${target_dir}`, 'success');
         switchTab('tasks');
         loadTasks();
       } catch (err) {
-        showToast('Error', err.message, 'error');
+        showToast('Download Error', err.message, 'error');
       }
     }
 
     function streamBrowserDownload() {
-      const url = document.getElementById('url-input').value.trim();
+      const url = urlInput.value.trim();
       if (!url) {
-        showToast('Empty Link', 'Please enter a MEGA link', 'error');
+        showToast('Empty Link', 'Please enter a link first', 'error');
         return;
       }
-      showToast('Starting Stream', 'Browser download triggered...', 'info');
+      showToast('Starting Stream', 'Browser streaming triggered...', 'info');
       window.location.href = `/api/stream?url=${encodeURIComponent(url)}`;
     }
 
@@ -404,11 +521,26 @@
     }
 
     async function openTargetFolder() {
-      const dir = document.getElementById('target-dir-input').value.trim() || 'D:\\anime';
+      const dir = targetDirInput.value.trim() || 'D:\\anime';
       try {
         await fetch(`/api/open-directory?dir_path=${encodeURIComponent(dir)}`, { method: 'POST' });
       } catch (err) {
         showToast('Error', 'Failed to open folder', 'error');
+      }
+    }
+
+    function getProviderBadgeColor(provider) {
+      switch (provider) {
+        case 'mega':
+          return { bg: 'bg-red-500/20 text-red-300 border-red-500/30', label: 'MEGA' };
+        case 'terabox':
+          return { bg: 'bg-sky-500/20 text-sky-300 border-sky-500/30', label: 'TERABOX' };
+        case 'gdrive':
+          return { bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30', label: 'GDRIVE' };
+        case 'media':
+          return { bg: 'bg-purple-500/20 text-purple-300 border-purple-500/30', label: 'MEDIA' };
+        default:
+          return { bg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30', label: 'DIRECT' };
       }
     }
 
@@ -433,44 +565,49 @@
         empty.classList.add('hidden');
         container.innerHTML = tasks.map(t => {
           let badgeColor = 'bg-slate-700 text-slate-300';
-          let progressBg = 'bg-cyan-500';
+          let progressBg = 'bg-indigo-500';
 
           if (t.status === 'COMPLETED') {
             badgeColor = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
             progressBg = 'bg-emerald-500';
           } else if (t.status === 'FAILED') {
-            badgeColor = 'bg-red-500/20 text-red-400 border border-red-500/30';
-            progressBg = 'bg-red-500';
+            badgeColor = 'bg-rose-500/20 text-rose-400 border border-rose-500/30';
+            progressBg = 'bg-rose-500';
           } else if (t.status === 'DOWNLOADING') {
-            badgeColor = 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 animate-pulse-subtle';
-            progressBg = 'bg-gradient-to-r from-red-500 via-rose-500 to-cyan-400';
+            badgeColor = 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 animate-pulse-subtle';
+            progressBg = 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500';
           }
+
+          const providerInfo = getProviderBadgeColor(t.provider || 'direct');
 
           return `
             <div class="glass rounded-2xl p-4 md:p-5 shadow-lg border border-slate-700/60 transition hover:border-slate-600">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-red-400">
-                    <i data-lucide="${t.status === 'COMPLETED' ? 'check' : (t.status === 'FAILED' ? 'alert-circle' : 'file-archive')}" class="w-5 h-5"></i>
+                  <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-indigo-400 shrink-0">
+                    <i data-lucide="${t.status === 'COMPLETED' ? 'check' : (t.status === 'FAILED' ? 'alert-circle' : 'hard-drive')}" class="w-5 h-5"></i>
                   </div>
                   <div class="overflow-hidden">
-                    <h4 class="font-semibold text-sm text-slate-100 truncate max-w-sm md:max-w-md" title="${t.file_name}">${t.file_name}</h4>
+                    <div class="flex items-center gap-2">
+                      <h4 class="font-semibold text-sm text-slate-100 truncate max-w-sm md:max-w-md" title="${t.file_name}">${t.file_name}</h4>
+                      <span class="text-[9px] font-mono px-1.5 py-0.5 rounded border uppercase ${providerInfo.bg}">${providerInfo.label}</span>
+                    </div>
                     <p class="text-xs text-slate-400 font-mono mt-0.5 truncate">${t.target_dir}</p>
                   </div>
                 </div>
 
-                <div class="flex items-center gap-2 self-end sm:self-auto">
+                <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
                   <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${badgeColor}">
                     ${t.status}
                   </span>
                   ${t.status === 'DOWNLOADING' ? `
-                    <button onclick="cancelTask('${t.task_id}')" class="px-2.5 py-1 rounded-lg text-xs bg-red-950/50 hover:bg-red-900 border border-red-700/60 text-red-300 transition" title="Cancel Download">
+                    <button onclick="cancelTask('${t.task_id}')" class="px-2.5 py-1 rounded-lg text-xs bg-rose-950/60 hover:bg-rose-900 border border-rose-700/60 text-rose-300 transition" title="Cancel Download">
                       Cancel
                     </button>
                   ` : ''}
                   ${t.status === 'COMPLETED' ? `
                     <button onclick="openTaskFolder('${t.task_id}')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition flex items-center gap-1">
-                      <i data-lucide="folder" class="w-3.5 h-3.5 text-cyan-400"></i>
+                      <i data-lucide="folder" class="w-3.5 h-3.5 text-indigo-400"></i>
                       <span>Show</span>
                     </button>
                   ` : ''}
@@ -489,16 +626,16 @@
                 </div>
                 ${t.status === 'DOWNLOADING' ? `
                   <div class="flex items-center gap-3">
-                    <span class="text-cyan-400 font-semibold">${t.speed_formatted}</span>
+                    <span class="text-indigo-400 font-semibold">${t.speed_formatted}</span>
                     <span>•</span>
                     <span>ETA: ${t.eta_formatted}</span>
                   </div>
                 ` : ''}
                 ${t.status === 'COMPLETED' ? `
-                  <span class="text-emerald-400">Downloaded in ${t.elapsed_seconds}s</span>
+                  <span class="text-emerald-400 font-semibold">Downloaded in ${t.elapsed_seconds}s</span>
                 ` : ''}
                 ${t.status === 'FAILED' ? `
-                  <span class="text-red-400">${t.error_message || 'Download Failed'}</span>
+                  <span class="text-rose-400">${t.error_message || 'Download Failed'}</span>
                 ` : ''}
               </div>
             </div>
@@ -512,7 +649,7 @@
     }
 
     async function loadHistory() {
-      const dir = document.getElementById('target-dir-input').value.trim() || 'D:\\anime';
+      const dir = targetDirInput.value.trim() || 'D:\\anime';
       try {
         const res = await fetch(`/api/history?target_dir=${encodeURIComponent(dir)}`);
         const data = await res.json();
@@ -529,16 +666,16 @@
         container.innerHTML = files.map(f => `
           <div class="p-4 flex items-center justify-between hover:bg-slate-800/40 transition">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400">
+              <div class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 shrink-0">
                 <i data-lucide="file" class="w-4 h-4"></i>
               </div>
-              <div>
-                <h5 class="text-sm font-semibold text-slate-200">${f.name}</h5>
+              <div class="overflow-hidden">
+                <h5 class="text-sm font-semibold text-slate-200 truncate max-w-sm sm:max-w-md" title="${f.name}">${f.name}</h5>
                 <span class="text-xs font-mono text-slate-400">${f.size_formatted}</span>
               </div>
             </div>
-            <button onclick="openTargetFolder()" class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5 border border-slate-700">
-              <i data-lucide="external-link" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <button onclick="openTargetFolder()" class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5 border border-slate-700 shrink-0">
+              <i data-lucide="external-link" class="w-3.5 h-3.5 text-indigo-400"></i>
               <span>Open in Folder</span>
             </button>
           </div>
@@ -560,13 +697,13 @@
       if (tab === 'tasks') {
         tasksContent.classList.remove('hidden');
         historyContent.classList.add('hidden');
-        btnTasks.className = 'pb-3 text-sm font-bold text-red-500 border-b-2 border-red-500 flex items-center gap-2 transition';
+        btnTasks.className = 'pb-3 text-sm font-bold text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-2 transition';
         btnHistory.className = 'pb-3 text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-2 transition';
         loadTasks();
       } else {
         tasksContent.classList.add('hidden');
         historyContent.classList.remove('hidden');
-        btnHistory.className = 'pb-3 text-sm font-bold text-red-500 border-b-2 border-red-500 flex items-center gap-2 transition';
+        btnHistory.className = 'pb-3 text-sm font-bold text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-2 transition';
         btnTasks.className = 'pb-3 text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-2 transition';
         loadHistory();
       }

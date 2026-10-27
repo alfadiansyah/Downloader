@@ -1,8 +1,8 @@
 @echo off
-title MEGA Web Downloader Pro
+title OmniDownloader Pro - Universal Web Downloader
 cd /d "%~dp0"
 echo ========================================================
-echo         MEGA Web Downloader Pro - Starting...
+echo       OmniDownloader Pro (Universal Web Downloader)
 echo ========================================================
 echo Server URL: http://localhost:8000
 echo.
